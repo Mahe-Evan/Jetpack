@@ -27,7 +27,6 @@ SERVER_SRC	=	\
 	$(SERVER_DIR)handle_clients.c	\
 	$(SERVER_DIR)receive_command.c	\
 	$(SERVER_DIR)send_commands.c	\
-	$(SERVER_DIR)connections_utils.c	\
 	$(SERVER_DIR)free_all.c	\
 	$(SERVER_DIR)game_logic.c	\
 
