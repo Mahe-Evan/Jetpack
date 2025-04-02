@@ -48,7 +48,7 @@ CXXFLAGS+=	$(ERROR) $(INCLUDES) -g -std=c++11
 CC	:=	gcc
 CXX	:=	g++
 
-SFML_LIBS = -lsfml-graphics -lsfml-window -lsfml-system
+SFML_LIBS = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 
 SERVER_OBJ	=	$(SERVER_SRC:.c=.o) $(SERVER_MAIN:.c=.o)
 CLIENT_OBJ	=	$(CLIENT_SRC:.cpp=.o) $(CLIENT_MAIN:.cpp=.o)
