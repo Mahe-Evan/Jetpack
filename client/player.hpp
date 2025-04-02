@@ -1,25 +1,23 @@
 /*
 ** EPITECH PROJECT, 2025
-** jetpack_client
+** jetpack
 ** File description:
-** Player definition
+** Player class for client
 */
 
-#ifndef PLAYER_HPP
-#define PLAYER_HPP
+#ifndef PLAYER_HPP_
+#define PLAYER_HPP_
 
-#include <SFML/Graphics.hpp>
+class Player {
+  public:
+    Player();
+    ~Player() = default;
 
-struct Player {
     int id;
     float x;
     float y;
     int score;
     bool flying;
-    sf::Sprite sprite;
-
-    Player();
-    Player(int playerId, float posX = 0.0f, float posY = 5.0f);
 };
 
-#endif      // PLAYER_HPP
+#endif /* !PLAYER_HPP_ */
