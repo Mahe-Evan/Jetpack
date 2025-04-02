@@ -1,152 +1,408 @@
 /*
 ** EPITECH PROJECT, 2025
-** jetpack_client
+** jetpack
 ** File description:
-** Network manager implementation
+** Network manager implementation for client
 */
 
 #include "networkManager.hpp"
-#include "gameState.hpp"
-#include <arpa/inet.h>
-#include <cstring>
+#include <errno.h>
+#include <fcntl.h>
+#include <functional>
 #include <iostream>
-#include <netinet/in.h>
 #include <sstream>
-#include <sys/socket.h>
-#include <unistd.h>
+#include <string.h>
 
-NetworkManager::NetworkManager(const std::string &host, int port)
-    : host(host), port(port), sockfd(-1), lastFlyStatus(false)
-{}
+NetworkManager::NetworkManager()
+    : socketFd(-1), running(false), connected(false),
+      gameStarted(false), gameEnded(false), clientId(-1),
+      gameResult(0), debugMode(false)
+{
+    memset(buffer, 0, BUFFER_SIZE);
+
+    responseHandlers["ID"] = [this](const std::string &line) {
+        int id;
+        if (sscanf(line.c_str(), "ID %d", &id) == 1) {
+            clientId = id;
+            sendCommand("OK");
+        } else {
+            sendCommand("ERROR Invalid ID");
+        }
+    };
+
+    responseHandlers["MAP"] = [this](const std::string &line) {
+        int length;
+        size_t startPos = line.find(" ") + 1;
+        if (startPos != std::string::npos) {
+            std::string lengthStr = line.substr(startPos);
+            size_t secondSpace = lengthStr.find(" ");
+
+            if (secondSpace != std::string::npos) {
+                length = std::stoi(lengthStr.substr(0, secondSpace));
+                std::string rawMap =
+                    lengthStr.substr(secondSpace + 1);
+
+                std::vector<std::string> newMap;
+                for (int i = 0; i < 10; i++) {
+                    if ((i + 1) * length <= rawMap.length()) {
+                        newMap.push_back(
+                            rawMap.substr(i * length, length));
+                    } else {
+                        sendCommand("ERROR Map length mismatch");
+                        return;
+                    }
+                }
+
+                for (const auto &line : newMap) {
+                    for (char c : line) {
+                        if (c != '_' && c != 'c' && c != 'e') {
+                            std::string errorMsg =
+                                "ERROR Character not recognized: '";
+                            errorMsg.push_back(c);
+                            errorMsg.push_back('\'');
+                            sendCommand(errorMsg);
+                            return;
+                        }
+                    }
+                }
+
+                {
+                    std::lock_guard<std::mutex> lock(dataMutex);
+                    mapData = newMap;
+                }
+
+                sendCommand("OK");
+            } else {
+                sendCommand("ERROR Invalid MAP format");
+            }
+        } else {
+            sendCommand("ERROR Invalid MAP format");
+        }
+    };
+
+    responseHandlers["START"] = [this](const std::string &line) {
+        gameStarted = true;
+        sendCommand("OK");
+    };
+
+    responseHandlers["PLAYER"] = [this](const std::string &line) {
+        int id, score, flyStatus;
+        float x, y;
+        if (sscanf(line.c_str(), "PLAYER %d %f %f %d %d", &id, &x, &y,
+                &score, &flyStatus) == 5) {
+            PlayerPosition pos = {id, x, y, score, flyStatus == 1};
+
+            {
+                std::lock_guard<std::mutex> lock(dataMutex);
+                bool found = false;
+                for (auto &p : playerPositions) {
+                    if (p.playerId == id) {
+                        p = pos;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    playerPositions.push_back(pos);
+                }
+            }
+
+            sendCommand("OK");
+        } else {
+            sendCommand("ERROR Invalid number of data");
+        }
+    };
+
+    responseHandlers["COIN"] = [this](const std::string &line) {
+        int id, x, y;
+        if (sscanf(line.c_str(), "COIN %d %d %d", &id, &x, &y) == 3) {
+            {
+                std::lock_guard<std::mutex> lock(dataMutex);
+                coins.push_back({x, y});
+            }
+
+            sendCommand("OK");
+        } else {
+            sendCommand("ERROR Invalid number of data");
+        }
+    };
+
+    responseHandlers["END"] = [this](const std::string &line) {
+        int result;
+        if (sscanf(line.c_str(), "END %d", &result) == 1) {
+            gameEnded = true;
+            gameResult = result;
+
+            sendCommand("OK");
+        } else {
+            sendCommand("ERROR Invalid game result");
+        }
+    };
+}
 
 NetworkManager::~NetworkManager()
 {
-    if (sockfd != -1) {
-        close(sockfd);
-    }
+    disconnect();
 }
 
-void NetworkManager::run()
+bool NetworkManager::connect(const std::string &host, int port)
 {
-    if (!connect()) {
-        running = false;
-        cv.notify_all();
-        return;
+    if (connected) {
+        return true;
     }
 
-    sendCommand("READY");
-    mainLoop();
-
-    close(sockfd);
-    running = false;
-    cv.notify_all();
-}
-
-bool NetworkManager::connect()
-{
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        std::cerr << "Error creating socket" << std::endl;
-        return false;
-    }
-
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-
-    if (inet_pton(AF_INET, host.c_str(), &server_addr.sin_addr) <=
-        0) {
-        std::cerr << "Invalid address" << std::endl;
-        close(sockfd);
-        return false;
-    }
-
-    if (::connect(sockfd, (struct sockaddr *)&server_addr,
-            sizeof(server_addr)) < 0) {
-        std::cerr << "Connection failed" << std::endl;
-        close(sockfd);
-        return false;
-    }
-
-    if (debug_mode) {
-        std::cout << "Connected to server " << host << ":" << port
+    socketFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (socketFd < 0) {
+        std::cerr << "Error creating socket: " << strerror(errno)
                   << std::endl;
+        return false;
     }
+
+    struct sockaddr_in serverAddr;
+    memset(&serverAddr, 0, sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(port);
+
+    if (inet_pton(AF_INET, host.c_str(), &serverAddr.sin_addr) <= 0) {
+        std::cerr << "Invalid address or address not supported: "
+                  << strerror(errno) << std::endl;
+        close(socketFd);
+        socketFd = -1;
+        return false;
+    }
+
+    if (::connect(socketFd, (struct sockaddr *)&serverAddr,
+            sizeof(serverAddr)) < 0) {
+        std::cerr << "Connection failed: " << strerror(errno)
+                  << std::endl;
+        close(socketFd);
+        socketFd = -1;
+        return false;
+    }
+
+    pollFd.fd = socketFd;
+    pollFd.events = POLLIN;
+
+    running = true;
+    connected = true;
+    networkThreadHandle =
+        std::thread(&NetworkManager::networkThread, this);
 
     return true;
 }
 
-void NetworkManager::mainLoop()
+void NetworkManager::disconnect()
 {
-    char buffer[MAX_BUFFER_SIZE];
+    if (!connected) {
+        return;
+    }
 
+    running = false;
+
+    {
+        std::lock_guard<std::mutex> lock(commandMutex);
+        commandQueue.push("QUIT");
+    }
+    commandCV.notify_one();
+
+    if (networkThreadHandle.joinable()) {
+        networkThreadHandle.join();
+    }
+
+    if (socketFd >= 0) {
+        close(socketFd);
+        socketFd = -1;
+    }
+
+    connected = false;
+    gameStarted = false;
+    gameEnded = false;
+}
+
+bool NetworkManager::sendReady()
+{
+    return sendCommand("READY");
+}
+
+bool NetworkManager::sendFly(bool activate)
+{
+    std::string command = "FLY " + std::to_string(activate ? 1 : 0);
+    return sendCommand(command);
+}
+
+std::vector<std::string> NetworkManager::getMap()
+{
+    std::lock_guard<std::mutex> lock(dataMutex);
+    return mapData;
+}
+
+std::vector<NetworkManager::PlayerPosition>
+NetworkManager::getPlayerPositions()
+{
+    std::lock_guard<std::mutex> lock(dataMutex);
+    return playerPositions;
+}
+
+std::vector<NetworkManager::Coin> NetworkManager::getCoins()
+{
+    std::lock_guard<std::mutex> lock(dataMutex);
+    return coins;
+}
+
+bool NetworkManager::isConnected() const
+{
+    return connected;
+}
+
+bool NetworkManager::hasGameStarted() const
+{
+    return gameStarted;
+}
+
+bool NetworkManager::hasGameEnded() const
+{
+    return gameEnded;
+}
+
+int NetworkManager::getGameResult() const
+{
+    return gameResult;
+}
+
+int NetworkManager::getClientId() const
+{
+    return clientId;
+}
+
+void NetworkManager::setDebugMode(bool enable)
+{
+    debugMode = enable;
+}
+
+bool NetworkManager::sendCommand(const std::string &command)
+{
+    if (!connected) {
+        return false;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(commandMutex);
+        commandQueue.push(command);
+    }
+    commandCV.notify_one();
+
+    return true;
+}
+
+void NetworkManager::debugPrint(
+    const std::string &direction, const std::string &message)
+{
+    if (debugMode) {
+        std::cout << "[" << direction << "] \"" << message << "\""
+                  << std::endl;
+    }
+}
+
+void NetworkManager::networkThread()
+{
     while (running) {
-        memset(buffer, 0, MAX_BUFFER_SIZE);
-        ssize_t bytes_read =
-            recv(sockfd, buffer, MAX_BUFFER_SIZE - 1, 0);
+        {
+            std::unique_lock<std::mutex> lock(commandMutex);
 
-        if (bytes_read <= 0) {
-            if (debug_mode) {
-                std::cerr << "Server disconnected" << std::endl;
+            commandCV.wait_for(lock, std::chrono::milliseconds(100),
+                [this] { return !commandQueue.empty() || !running; });
+
+            while (!commandQueue.empty()) {
+                std::string cmd = commandQueue.front();
+                commandQueue.pop();
+
+                if (!running && cmd == "QUIT") {
+                    continue;
+                }
+
+                debugPrint("CLIENT", cmd);
+
+                cmd += "\r\n";
+
+                ssize_t bytesWritten =
+                    write(socketFd, cmd.c_str(), cmd.length());
+                if (bytesWritten < 0) {
+                    std::cerr << "Error sending command: "
+                              << strerror(errno) << std::endl;
+                    running = false;
+                    connected = false;
+                    break;
+                }
             }
+        }
+
+        int pollResult = poll(&pollFd, 1, 0);
+
+        if (pollResult < 0) {
+            std::cerr << "Poll error: " << strerror(errno)
+                      << std::endl;
             break;
-        }
+        } else if (pollResult > 0 && (pollFd.revents & POLLIN)) {
+            ssize_t bytesRead =
+                read(socketFd, buffer, BUFFER_SIZE - 1);
 
-        std::string data(buffer, bytes_read);
-        if (debug_mode) {
-            std::cout << "Received: " << data << std::endl;
-        }
+            if (bytesRead < 0) {
+                std::cerr << "Error reading from socket: "
+                          << strerror(errno) << std::endl;
+                break;
+            } else if (bytesRead == 0) {
+                std::cout << "Server closed connection" << std::endl;
+                connected = false;
+                break;
+            } else {
+                buffer[bytesRead] = '\0';
 
-        std::istringstream stream(data);
-        std::string line;
-        while (std::getline(stream, line)) {
-            if (!line.empty()) {
-                commandHandler.handleCommand(line);
+                partialMessage.append(buffer, bytesRead);
+
+                size_t pos;
+                while ((pos = partialMessage.find("\r\n")) !=
+                       std::string::npos) {
+                    std::string message =
+                        partialMessage.substr(0, pos);
+                    partialMessage = partialMessage.substr(pos + 2);
+
+                    debugPrint("SERVER", message);
+
+                    processData(message);
+                }
             }
         }
 
-        sendFlyStatus();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+
+    if (socketFd >= 0) {
+        close(socketFd);
+        socketFd = -1;
+    }
+
+    connected = false;
 }
 
-void NetworkManager::sendFlyStatus()
+void NetworkManager::processData(const std::string &data)
 {
-    std::lock_guard<std::mutex> lock(gameState.stateMutex);
-
-    if (gameState.gameStarted && !gameState.gameEnded &&
-        gameState.flyStatus != lastFlyStatus) {
-        std::string flyCmd =
-            "FLY " + std::to_string(gameState.flyStatus ? 1 : 0);
-        sendCommand(flyCmd);
-        lastFlyStatus = gameState.flyStatus;
-    }
-}
-
-void NetworkManager::sendCommand(const std::string &command)
-{
-    if (debug_mode) {
-        std::cout << "Sending: " << command << std::endl;
+    if (data.empty()) {
+        return;
     }
 
-    std::string cmd = command + "\r\n";
-    send(sockfd, cmd.c_str(), cmd.length(), 0);
+    std::istringstream iss(data);
+    std::string command;
+    iss >> command;
 
-    std::string response = receiveResponse();
-
-    if (debug_mode) {
-        std::cout << "Response: " << response << std::endl;
+    auto it = responseHandlers.find(command);
+    if (it != responseHandlers.end()) {
+        it->second(data);
+    } else {
+        if (command == "OK" || command.substr(0, 5) == "ERROR") {
+        } else {
+            std::cerr << "Unknown command received: " << command
+                      << std::endl;
+        }
     }
-}
-
-std::string NetworkManager::receiveResponse()
-{
-    char buffer[MAX_BUFFER_SIZE];
-    memset(buffer, 0, MAX_BUFFER_SIZE);
-
-    ssize_t bytes_read = recv(sockfd, buffer, MAX_BUFFER_SIZE - 1, 0);
-    if (bytes_read <= 0) {
-        return "";
-    }
-
-    return std::string(buffer, bytes_read);
 }
