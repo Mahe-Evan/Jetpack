@@ -1,56 +1,48 @@
 /*
 ** EPITECH PROJECT, 2025
-** jetpack_client
+** jetpack
 ** File description:
-** Game state definition
+** Game state for client
 */
 
-#ifndef GAME_STATE_HPP
-#define GAME_STATE_HPP
+#ifndef GAME_STATE_HPP_
+#define GAME_STATE_HPP_
 
+#include "networkManager.hpp"
 #include "player.hpp"
-#include <SFML/Graphics.hpp>
-#include <atomic>
-#include <condition_variable>
 #include <mutex>
 #include <string>
 #include <vector>
 
-constexpr int WINDOW_WIDTH = 800;
-constexpr int WINDOW_HEIGHT = 600;
-constexpr float PLAYER_SPEED = 5.0f;
-constexpr float GRAVITY = 0.5f;
-constexpr float JETPACK_FORCE = 0.8f;
-constexpr float SCROLL_SPEED = 2.0f;
-
-enum MapObjectType {
+// Game map objects enum - renamed COIN to avoid conflict with
+// JetpackCommand
+enum MapObject {
     EMPTY = '_',
-    COIN = 'c',
+    COIN_OBJECT = 'c',      // Renamed from COIN to avoid conflict
     ELECTRIC = 'e'
 };
 
 class GameState {
   public:
     GameState();
+    ~GameState() = default;
 
-    Player *getLocalPlayer();
-    Player *getPlayerById(int id);
+    // Method to update state from network data
+    void updateFromNetwork(const std::vector<std::string> &map,
+        const std::vector<NetworkManager::PlayerPosition>
+            &playerPositions,
+        bool gameStarted, bool gameEnded, int gameResult);
 
-    std::vector<Player> players;
-    int localPlayerId;
+    // Game state data
     std::vector<std::string> map;
-    bool ready;
+    std::vector<Player> players;
     bool gameStarted;
     bool gameEnded;
     int gameResult;
     float mapOffset;
-    bool flyStatus;
-    std::mutex stateMutex;
+
+    // Mutex for thread-safe access
+    mutable std::mutex stateMutex;
 };
 
-extern GameState gameState;
-extern std::atomic<bool> running;
-extern std::condition_variable cv;
-extern bool debug_mode;
-
-#endif      // GAME_STATE_HPP
+#endif /* !GAME_STATE_HPP_ */
