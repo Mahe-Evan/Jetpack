@@ -1,88 +1,153 @@
 /*
 ** EPITECH PROJECT, 2025
-** jetpack_client
+** jetpack
 ** File description:
 ** Asset manager implementation
 */
 
 #include "assetManager.hpp"
-#include "gameState.hpp"
 #include <iostream>
 
 AssetManager::AssetManager()
-{
-    if (!loadAssets()) {
-        std::cerr << "Failed to load assets" << std::endl;
-        running = false;
-    }
-}
+{}
+
+AssetManager::~AssetManager()
+{}
 
 bool AssetManager::loadAssets()
 {
-    sf::Texture normalTexture, flyingTexture;
-    if (!loadTexture(normalTexture, "assets/player_normal.png") ||
-        !loadTexture(flyingTexture, "assets/player_normal.png")) {
-        return false;
-    }
+    bool success = true;
 
-    playerTextures[PLAYER_NORMAL] = normalTexture;
-    playerTextures[PLAYER_FLYING] = flyingTexture;
+    success &= loadTexture("background", "assets/background.png");
+    success &=
+        loadTexture("player_normal", "assets/player_normal.png");
+    success &=
+        loadTexture("player_flying", "assets/player_normal.png");
+    success &= loadTexture("coin", "assets/coin.png");
+    success &= loadTexture("electric", "assets/electric.png");
 
-    if (!loadTexture(coinTexture, "assets/coin.png") ||
-        !loadTexture(electricTexture, "assets/electric.png") ||
-        !loadTexture(backgroundTexture, "assets/background.png")) {
-        return false;
-    }
+    success &= loadSound("jetpack", "assets/jetpack.ogg");
+    success &= loadSound("coin_pickup", "assets/coin_pickup_1.wav");
+    success &= loadSound("zapper", "assets/dud_zapper_pop.wav");
 
-    if (!font.loadFromFile("assets/font.ttf")) {
-        if (!font.loadFromFile(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
-            std::cerr << "Warning: Failed to load font, text may not "
-                         "display"
-                      << std::endl;
-        }
-    }
+    success &= loadFont("assets/font.ttf");
 
-    return true;
+    return success;
 }
 
 bool AssetManager::loadTexture(
-    sf::Texture &texture, const std::string &path)
+    const std::string &name, const std::string &filename)
 {
-    if (!texture.loadFromFile(path)) {
-        std::cerr << "Failed to load texture: " << path << std::endl;
+    sf::Texture texture;
+    if (!texture.loadFromFile(filename)) {
+        std::cerr << "Failed to load texture: " << filename
+                  << std::endl;
+        return false;
+    }
+
+    textures[name] = texture;
+    return true;
+}
+
+bool AssetManager::loadSound(
+    const std::string &name, const std::string &filename)
+{
+    sf::SoundBuffer buffer;
+    if (!buffer.loadFromFile(filename)) {
+        std::cerr << "Failed to load sound: " << filename
+                  << std::endl;
+        return false;
+    }
+
+    soundBuffers[name] = buffer;
+    sounds[name].setBuffer(soundBuffers[name]);
+    return true;
+}
+
+bool AssetManager::loadFont(const std::string &filename)
+{
+    if (!font.loadFromFile(filename)) {
+        std::cerr << "Failed to load font: " << filename << std::endl;
         return false;
     }
     return true;
 }
 
-const sf::Texture &AssetManager::getPlayerTexture(
-    PlayerState state) const
+sf::Sprite AssetManager::getBackgroundSprite() const
 {
-    auto it = playerTextures.find(state);
-    if (it != playerTextures.end()) {
-        return it->second;
+    sf::Sprite sprite;
+    auto it = textures.find("background");
+    if (it != textures.end()) {
+        sprite.setTexture(it->second);
     }
-
-    return playerTextures.at(PLAYER_NORMAL);
+    return sprite;
 }
 
-const sf::Texture &AssetManager::getCoinTexture() const
+sf::Sprite AssetManager::getPlayerNormalSprite() const
 {
-    return coinTexture;
+    sf::Sprite sprite;
+    auto it = textures.find("player_normal");
+    if (it != textures.end()) {
+        sprite.setTexture(it->second);
+    }
+    return sprite;
 }
 
-const sf::Texture &AssetManager::getElectricTexture() const
+sf::Sprite AssetManager::getPlayerFlyingSprite() const
 {
-    return electricTexture;
+    sf::Sprite sprite;
+    auto it = textures.find("player_flying");
+    if (it != textures.end()) {
+        sprite.setTexture(it->second);
+    }
+    return sprite;
 }
 
-const sf::Texture &AssetManager::getBackgroundTexture() const
+sf::Sprite AssetManager::getCoinSprite() const
 {
-    return backgroundTexture;
+    sf::Sprite sprite;
+    auto it = textures.find("coin");
+    if (it != textures.end()) {
+        sprite.setTexture(it->second);
+    }
+    return sprite;
+}
+
+sf::Sprite AssetManager::getElectricSprite() const
+{
+    sf::Sprite sprite;
+    auto it = textures.find("electric");
+    if (it != textures.end()) {
+        sprite.setTexture(it->second);
+    }
+    return sprite;
 }
 
 const sf::Font &AssetManager::getFont() const
 {
     return font;
+}
+
+void AssetManager::playJetpackSound()
+{
+    auto it = sounds.find("jetpack");
+    if (it != sounds.end()) {
+        it->second.play();
+    }
+}
+
+void AssetManager::playCoinPickupSound()
+{
+    auto it = sounds.find("coin_pickup");
+    if (it != sounds.end()) {
+        it->second.play();
+    }
+}
+
+void AssetManager::playZapperSound()
+{
+    auto it = sounds.find("zapper");
+    if (it != sounds.end()) {
+        it->second.play();
+    }
 }

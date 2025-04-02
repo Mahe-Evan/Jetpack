@@ -1,42 +1,47 @@
 /*
 ** EPITECH PROJECT, 2025
-** jetpack_client
+** jetpack
 ** File description:
-** Asset manager definition
+** Asset manager for client
 */
 
-#ifndef ASSET_MANAGER_HPP
-#define ASSET_MANAGER_HPP
+#ifndef ASSET_MANAGER_HPP_
+#define ASSET_MANAGER_HPP_
 
+#include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <map>
 #include <string>
 
-enum PlayerState {
-    PLAYER_NORMAL,
-    PLAYER_FLYING
-};
-
 class AssetManager {
   public:
     AssetManager();
-    ~AssetManager() = default;
+    ~AssetManager();
 
-    const sf::Texture &getPlayerTexture(PlayerState state) const;
-    const sf::Texture &getCoinTexture() const;
-    const sf::Texture &getElectricTexture() const;
-    const sf::Texture &getBackgroundTexture() const;
+    bool loadAssets();
+
+    sf::Sprite getBackgroundSprite() const;
+    sf::Sprite getPlayerNormalSprite() const;
+    sf::Sprite getPlayerFlyingSprite() const;
+    sf::Sprite getCoinSprite() const;
+    sf::Sprite getElectricSprite() const;
     const sf::Font &getFont() const;
 
-  private:
-    bool loadAssets();
-    bool loadTexture(sf::Texture &texture, const std::string &path);
+    void playJetpackSound();
+    void playCoinPickupSound();
+    void playZapperSound();
 
-    std::map<PlayerState, sf::Texture> playerTextures;
-    sf::Texture coinTexture;
-    sf::Texture electricTexture;
-    sf::Texture backgroundTexture;
+  private:
+    std::map<std::string, sf::Texture> textures;
+    std::map<std::string, sf::SoundBuffer> soundBuffers;
+    std::map<std::string, sf::Sound> sounds;
     sf::Font font;
+
+    bool loadTexture(
+        const std::string &name, const std::string &filename);
+    bool loadSound(
+        const std::string &name, const std::string &filename);
+    bool loadFont(const std::string &filename);
 };
 
-#endif      // ASSET_MANAGER_HPP
+#endif /* !ASSET_MANAGER_HPP_ */
