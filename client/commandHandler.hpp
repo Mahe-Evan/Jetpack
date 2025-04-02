@@ -1,28 +1,38 @@
 /*
 ** EPITECH PROJECT, 2025
-** jetpack_client
+** jetpack
 ** File description:
-** Command handler definition
+** Command handler for client input
 */
 
-#ifndef COMMAND_HANDLER_HPP
-#define COMMAND_HANDLER_HPP
+#ifndef COMMAND_HANDLER_HPP_
+#define COMMAND_HANDLER_HPP_
 
-#include <string>
+#include "networkManager.hpp"
+#include <SFML/Graphics.hpp>
 
 class CommandHandler {
   public:
-    CommandHandler() = default;
+    CommandHandler(NetworkManager *networkManager);
+    ~CommandHandler() = default;
 
-    void handleCommand(const std::string &command);
+    void handleEvent(const sf::Event &event);
+
+    void updateInput(float deltaTime);
 
   private:
-    void handleID(std::istringstream &ss);
-    void handleMAP(std::istringstream &ss);
-    void handleSTART();
-    void handlePLAYER(std::istringstream &ss);
-    void handleCOIN(std::istringstream &ss);
-    void handleEND(std::istringstream &ss);
+    NetworkManager *networkManager;
+
+    bool isJetpackActive;
+    bool isLeftPressed;
+    bool isRightPressed;
+    bool isReadySent;
+
+    float jetpackCooldown;
+    float movementCooldown;
+
+    static constexpr float JETPACK_COMMAND_INTERVAL = 0.1f;
+    static constexpr float MOVEMENT_COMMAND_INTERVAL = 0.1f;
 };
 
-#endif      // COMMAND_HANDLER_HPP
+#endif /* !COMMAND_HANDLER_HPP_ */
