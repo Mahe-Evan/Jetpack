@@ -1,200 +1,153 @@
 /*
 ** EPITECH PROJECT, 2025
-** jetpack_client
+** jetpack
 ** File description:
 ** Game renderer implementation
 */
 
 #include "gameRenderer.hpp"
-#include "gameState.hpp"
 #include <iostream>
 
-GameRenderer::GameRenderer()
-    : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
-          "Jetpack Client")
-{
-    window.setFramerateLimit(60);
-
-    const sf::Font &font = assetManager.getFont();
-
-    statusText.setFont(font);
-    scoreText.setFont(font);
-    resultText.setFont(font);
-
-    statusText.setCharacterSize(24);
-    scoreText.setCharacterSize(24);
-    resultText.setCharacterSize(36);
-
-    statusText.setFillColor(sf::Color::White);
-    scoreText.setFillColor(sf::Color::White);
-    resultText.setFillColor(sf::Color::Yellow);
-
-    statusText.setPosition(10, 10);
-    scoreText.setPosition(10, 40);
-    resultText.setPosition(
-        WINDOW_WIDTH / 2 - 150, WINDOW_HEIGHT / 2 - 18);
-}
-
-GameRenderer::~GameRenderer()
+GameRenderer::GameRenderer(
+    sf::RenderWindow *window, AssetManager *assetManager)
+    : window(window), assetManager(assetManager)
 {}
 
-void GameRenderer::run()
+void GameRenderer::render(const GameState &gameState)
 {
-    while (running && window.isOpen()) {
-        processEvents();
-
-        float dt = clock.restart().asSeconds();
-
-        updateGameState(dt);
-        render();
-
-        sf::sleep(sf::milliseconds(16));
+    if (!window) {
+        return;
     }
-}
-
-void GameRenderer::processEvents()
-{
-    sf::Event event;
-    while (window.pollEvent(event)) {
-        if (event.type == sf::Event::Closed) {
-            window.close();
-            running = false;
-        }
-    }
-
-    bool flyRequested =
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Space);
-
-    {
-        std::lock_guard<std::mutex> lock(gameState.stateMutex);
-        gameState.flyStatus = flyRequested;
-    }
-}
-
-void GameRenderer::updateGameState(float dt)
-{
-    std::lock_guard<std::mutex> lock(gameState.stateMutex);
-
-    if (gameState.gameStarted && !gameState.gameEnded) {
-        gameState.mapOffset += SCROLL_SPEED * dt * 60.0f;
-    }
-}
-
-void GameRenderer::render()
-{
-    window.clear(sf::Color::Black);
 
     std::lock_guard<std::mutex> lock(gameState.stateMutex);
 
-    drawBackground();
-    drawMap();
-    drawPlayers();
-    drawUI();
+    window->clear(sf::Color(30, 30, 30));
 
-    window.display();
+    drawBackground(gameState);
+    drawMap(gameState);
+    drawPlayers(gameState);
+    drawUI(gameState);
+
+    window->display();
 }
 
-void GameRenderer::drawBackground()
+void GameRenderer::drawBackground(const GameState &gameState)
 {
-    const sf::Texture &bgTexture =
-        assetManager.getBackgroundTexture();
-    sf::Sprite backgroundSprite(bgTexture);
+    sf::Sprite backgroundSprite = assetManager->getBackgroundSprite();
 
-    float bgWidth = backgroundSprite.getLocalBounds().width;
-    for (int i = 0; i < WINDOW_WIDTH / bgWidth + 2; i++) {
+    float offset = -static_cast<float>(gameState.mapOffset);
+
+    for (int i = 0; i < 3; i++) {
         backgroundSprite.setPosition(
-            -static_cast<int>(gameState.mapOffset) %
-                    static_cast<int>(bgWidth) +
-                i * bgWidth,
-            0);
-        window.draw(backgroundSprite);
+            offset + i * backgroundSprite.getLocalBounds().width, 0);
+        window->draw(backgroundSprite);
     }
 }
 
-void GameRenderer::drawMap()
+void GameRenderer::drawMap(const GameState &gameState)
 {
-    const sf::Texture &coinTexture = assetManager.getCoinTexture();
-    const sf::Texture &electricTexture =
-        assetManager.getElectricTexture();
+    if (gameState.map.empty()) {
+        return;
+    }
 
-    sf::Sprite coinSprite(coinTexture);
-    sf::Sprite electricSprite(electricTexture);
+    sf::Sprite coinSprite = assetManager->getCoinSprite();
+    sf::Sprite electricSprite = assetManager->getElectricSprite();
 
-    float tileSize = 32.0f;
+    const float TILE_SIZE = 40.0f;
+
     for (size_t y = 0; y < gameState.map.size(); y++) {
-        for (size_t x = 0; x < gameState.map[y].size(); x++) {
-            float xPos = x * tileSize - gameState.mapOffset;
-            float yPos = y * tileSize;
+        const std::string &row = gameState.map[y];
+        for (size_t x = 0; x < row.length(); x++) {
+            float xPos = x * TILE_SIZE - gameState.mapOffset;
+            float yPos = y * TILE_SIZE;
 
-            if (xPos >= -tileSize && xPos <= WINDOW_WIDTH) {
-                if (gameState.map[y][x] == COIN) {
-                    coinSprite.setPosition(xPos, yPos);
-                    window.draw(coinSprite);
-                } else if (gameState.map[y][x] == ELECTRIC) {
-                    electricSprite.setPosition(xPos, yPos);
-                    window.draw(electricSprite);
-                }
+            if (xPos < -TILE_SIZE || xPos > window->getSize().x) {
+                continue;
+            }
+
+            if (row[x] == 'c') {
+                coinSprite.setPosition(xPos, yPos);
+                window->draw(coinSprite);
+            } else if (row[x] == 'e') {
+                electricSprite.setPosition(xPos, yPos);
+                window->draw(electricSprite);
             }
         }
     }
 }
 
-void GameRenderer::drawPlayers()
+void GameRenderer::drawPlayers(const GameState &gameState)
 {
     for (const auto &player : gameState.players) {
-        float playerX = 100;
-        float playerY = player.y * 50;
+        sf::Sprite playerSprite =
+            player.flying ? assetManager->getPlayerFlyingSprite()
+                          : assetManager->getPlayerNormalSprite();
 
-        PlayerState state =
-            player.flying ? PLAYER_FLYING : PLAYER_NORMAL;
-        sf::Sprite playerSprite(assetManager.getPlayerTexture(state));
+        playerSprite.setPosition(
+            player.x * 40.0f - gameState.mapOffset, player.y * 40.0f);
 
-        playerSprite.setPosition(playerX, playerY);
+        sf::Text idText;
+        idText.setFont(assetManager->getFont());
+        idText.setString("P" + std::to_string(player.id));
+        idText.setCharacterSize(14);
+        idText.setFillColor(sf::Color::White);
+        idText.setPosition(player.x * 40.0f - gameState.mapOffset,
+            player.y * 40.0f - 20.0f);
 
-        if (player.id == gameState.localPlayerId) {
-            playerSprite.setColor(sf::Color::White);
-        } else {
-            playerSprite.setColor(sf::Color(200, 200, 200));
-        }
-
-        window.draw(playerSprite);
+        window->draw(playerSprite);
+        window->draw(idText);
     }
 }
 
-void GameRenderer::drawUI()
+void GameRenderer::drawUI(const GameState &gameState)
 {
-    std::string statusString;
+    sf::Text statusText;
+    statusText.setFont(assetManager->getFont());
+    statusText.setCharacterSize(24);
+    statusText.setFillColor(sf::Color::White);
+
     if (!gameState.gameStarted) {
-        statusString = "Waiting for game to start...";
+        statusText.setString("Waiting for game to start...");
     } else if (gameState.gameEnded) {
-        statusString = "Game over";
+        if (gameState.gameResult == 0) {
+            statusText.setString("Game Over: Draw!");
+        } else {
+            statusText.setString(
+                "Game Over: Player " +
+                std::to_string(gameState.gameResult) + " wins!");
+        }
     } else {
-        statusString = "Playing";
+        statusText.setString("Game in progress");
     }
 
-    statusText.setString(statusString);
-    window.draw(statusText);
+    statusText.setPosition(10, 10);
+    window->draw(statusText);
 
-    std::string scoreString = "Scores: ";
+    float yPos = 50.0f;
     for (const auto &player : gameState.players) {
-        scoreString += "Player " + std::to_string(player.id) + ": " +
-                       std::to_string(player.score) + "   ";
+        sf::Text scoreText;
+        scoreText.setFont(assetManager->getFont());
+        scoreText.setString("Player " + std::to_string(player.id) +
+                            ": " + std::to_string(player.score) +
+                            " coins");
+        scoreText.setCharacterSize(18);
+        scoreText.setFillColor(sf::Color::White);
+        scoreText.setPosition(10, yPos);
+        window->draw(scoreText);
+        yPos += 30.0f;
     }
-    scoreText.setString(scoreString);
-    window.draw(scoreText);
 
     if (gameState.gameEnded) {
-        std::string resultString;
-        if (gameState.gameResult == 0) {
-            resultString = "Game ended in a draw!";
-        } else if (gameState.gameResult == gameState.localPlayerId) {
-            resultString = "You won the game!";
-        } else {
-            resultString = "Player " +
-                           std::to_string(gameState.gameResult) +
-                           " won the game!";
-        }
-        resultText.setString(resultString);
-        window.draw(resultText);
+        sf::Text gameOverText;
+        gameOverText.setFont(assetManager->getFont());
+        gameOverText.setString("Press ESC to exit");
+        gameOverText.setCharacterSize(20);
+        gameOverText.setFillColor(sf::Color::White);
+        gameOverText.setPosition(
+            (window->getSize().x -
+                gameOverText.getLocalBounds().width) /
+                2,
+            window->getSize().y - 100);
+        window->draw(gameOverText);
     }
 }

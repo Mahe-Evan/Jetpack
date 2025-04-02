@@ -1,40 +1,33 @@
 /*
 ** EPITECH PROJECT, 2025
-** jetpack_client
+** jetpack
 ** File description:
-** Game renderer definition
+** Game renderer for client
 */
 
-#ifndef GAME_RENDERER_HPP
-#define GAME_RENDERER_HPP
+#ifndef GAME_RENDERER_HPP_
+#define GAME_RENDERER_HPP_
 
 #include "assetManager.hpp"
+#include "gameState.hpp"
 #include <SFML/Graphics.hpp>
 
 class GameRenderer {
   public:
-    GameRenderer();
-    ~GameRenderer();
+    GameRenderer(
+        sf::RenderWindow *window, AssetManager *assetManager);
+    ~GameRenderer() = default;
 
-    void run();
+    void render(const GameState &gameState);
 
   private:
-    void processEvents();
-    void updateGameState(float dt);
-    void render();
+    sf::RenderWindow *window;
+    AssetManager *assetManager;
 
-    void drawBackground();
-    void drawMap();
-    void drawPlayers();
-    void drawUI();
-
-    sf::RenderWindow window;
-    sf::Clock clock;
-    AssetManager assetManager;
-
-    sf::Text statusText;
-    sf::Text scoreText;
-    sf::Text resultText;
+    void drawBackground(const GameState &gameState);
+    void drawMap(const GameState &gameState);
+    void drawPlayers(const GameState &gameState);
+    void drawUI(const GameState &gameState);
 };
 
-#endif      // GAME_RENDERER_HPP
+#endif /* !GAME_RENDERER_HPP_ */
