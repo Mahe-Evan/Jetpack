@@ -1,0 +1,599 @@
+Network Working Group                          E. Mahe R.Manet P.Chaillaud
+Request for Comments: XXXX                                 Epitech School
+Category: Informational                                     April 14, 2025
+                                                     
+
+
+                     Jetpack Communication Protocol
+                                    
+Status of This Memo
+
+   This document is not an Internet Standards Track specification; it is
+   published for informational purposes.
+
+   This document is a product of independent work. It represents the
+   consensus of the author. It does not define an Internet standard of
+   any kind.
+
+   This document is not subject to rights, licenses, or restrictions.
+
+Abstract
+
+   This document specifies the Jetpack Communication Protocol, a TCP-based
+   communication protocol designed for real-time interaction between
+   clients and servers in a jetpack-based game environment. The protocol
+   defines the command structure, data exchange formats, and response
+   handling mechanisms required for gameplay coordination.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . . . 2
+   2.  Protocol Format  . . . . . . . . . . . . . . . . . . . . . . . 2
+   3.  Commands . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+     3.1.  Command Types  . . . . . . . . . . . . . . . . . . . . . . 3
+     3.2.  Map Specification . . . . . . . . . . . . . . . . . . . . 5
+     3.3.  Raw Map Format  . . . . . . . . . . . . . . . . . . . . . 6
+     3.4.  Fly Status  . . . . . . . . . . . . . . . . . . . . . . . 7
+     3.5.  Game Result  . . . . . . . . . . . . . . . . . . . . . . . 7
+   4.  Response Types  . . . . . . . . . . . . . . . . . . . . . . . 7
+     4.1.  ID Response Format . . . . . . . . . . . . . . . . . . . . 7
+     4.2.  MAP Response Format  . . . . . . . . . . . . . . . . . . . 8
+     4.3.  READY Response Format . . . . . . . . . . . . . . . . . . 8
+     4.4.  START Response Format  . . . . . . . . . . . . . . . . . . 8
+     4.5.  PLAYER Response Format . . . . . . . . . . . . . . . . . . 9
+     4.6.  FLY Response Format  . . . . . . . . . . . . . . . . . . . 9
+     4.7.  COIN Response Format  . . . . . . . . . . . . . . . . . . 10
+     4.8.  END Response Format  . . . . . . . . . . . . . . . . . . . 10
+   5.  Protocol Interaction Example  . . . . . . . . . . . . . . . . 11
+   6.  Security Considerations . . . . . . . . . . . . . . . . . . . 12
+   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . . 13
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . . 13
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . . 13
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . . 13
+
+
+                        Informational                      [Page 1]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+1.  Introduction
+
+   The Jetpack Communication Protocol defines a set of commands and 
+   responses that facilitate communication between clients and servers in 
+   a jetpack-based game environment. This protocol enables real-time 
+   coordination of player movements, game state updates, and event 
+   notifications.
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [RFC2119].
+
+2.  Protocol Format
+
+   The Jetpack Communication Protocol is based on TCP (Transmission 
+   Control Protocol). Communication between the client and server is 
+   conducted through commands and responses.
+
+   A command consists of a command name followed by argument data:
+
+      <command> <data>
+
+   Example: For the server to send new information about a player to a 
+   client, the command would be:
+
+      PLAYER 1 21.0 3.1 4 1
+
+   This command indicates that the server is sending updated information
+   about Player 1, who is now at coordinates (x=21.0, y=3.1), has 4 
+   coins, and is currently flying.
+
+   A response contains a response code and an optional message:
+
+      <code> [<message>]
+
+   The message is only specified in case of an error and can contain 
+   spaces to indicate the outcome of command processing.
+
+   Example of a successful response:
+
+      OK
+
+   Example of an error response:
+
+      ERROR Character not recognized: 'p'
+
+
+                        Informational                      [Page 2]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+3.  Commands
+
+3.1.  Command Types
+
+   The protocol defines the following commands:
+
+   ID
+      Sent by: Server
+      Format: ID <player_id>
+      Description: Sends to the client its ID
+      Parameters:
+         <player_id> uint: The ID of the client chosen by the server
+
+   MAP
+      Sent by: Server
+      Format: MAP <length> <raw_map>
+      Description: Sends the map to the client
+      Parameters:
+         <length> uint: Length of the map (width)
+         <raw_map> raw_map: Raw representation of the map
+
+   READY
+      Sent by: Client
+      Format: READY
+      Description: Indicates to the server that the client is ready
+      Parameters: None
+
+   START
+      Sent by: Server
+      Format: START
+      Description: Indicates to the client that the game is starting
+      Parameters: None
+
+   PLAYER
+      Sent by: Server
+      Format: PLAYER <player_id> <pos_x> <pos_y> <score> <fly_status>
+      Description: Sends updated player information to the client
+      Parameters:
+         <player_id> uint: The ID of the player
+         <pos_x> ufloat: The x coordinate of the player
+         <pos_y> ufloat: The y coordinate of the player
+         <score> uint: The number of coins the player has
+         <fly_status> fly_status: The fly status of the player
+
+
+                        Informational                      [Page 3]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+   FLY
+      Sent by: Client
+      Format: FLY <fly_status>
+      Description: Indicates the client's desire to change fly status
+      Parameters:
+         <fly_status> fly_status: The desired fly status
+
+   COIN
+      Sent by: Server
+      Format: COIN <player_id> <pos_x> <pos_y>
+      Description: Indicates that a player has collected a coin
+      Parameters:
+         <player_id> uint: The player that collected the coin
+         <pos_x> uint: The x coordinate of the coin
+         <pos_y> uint: The y coordinate of the coin
+
+   END
+      Sent by: Server
+      Format: END <game_result>
+      Description: Indicates that the game has ended
+      Parameters:
+         <game_result> game_result: The outcome of the game
+
+
+                        Informational                      [Page 4]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+3.2.  Map Specification
+
+   The map in the Jetpack Communication Protocol represents the game 
+   environment. Each character in the map corresponds to an object in the 
+   game. The map is visually represented with each line separated by a 
+   newline character ('\n').
+
+   Available map objects:
+
+   - "_" (underscore): Empty cell
+   - "c": Coin
+   - "e": Electric cell
+
+   The map MUST have a static height of 10 rows, while the length 
+   (number of columns) MAY vary.
+
+   Example of a map:
+
+   ```
+   ____________________________e______________________________
+   ____________________________e______cccccc__________________
+   ____________________________e_____ccccccc________eeeeeeeeee
+   ____________________________e____cc________________________
+   ____________________________e___cc______e_________cccc_____
+   _______________________________cc_______e_________cccc_____
+   _________________________ccccccc________e_________________ 
+   _________________________cccccc_________e_____eeeeeeeeeeeee
+   ________________________________________e_________________ 
+   ________________________________________e_________________
+   ```
+
+   The above representation shows a map with:
+   - Empty spaces ("_")
+   - Coins ("c") clustered in groups
+   - Electric cells ("e") forming barriers
+
+
+                        Informational                      [Page 5]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+3.3.  Raw Map Format
+
+   The raw_map format is used to transmit map data within a command. To
+   convert a standard map into a raw map, all newline characters ('\n') 
+   are removed, resulting in a single-line string.
+
+   For example, a simple 3x3 map:
+
+   ```
+   _c_
+   eee
+   _c_
+   ```
+
+   Would be converted to the following raw map:
+
+   ```
+   _c_eee_c_
+   ```
+
+   This format allows efficient transmission of map data within command
+   parameters while maintaining the logical structure of the map.
+
+
+                        Informational                      [Page 6]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+3.4.  Fly Status
+
+   The fly_status is a boolean value representing whether a client wants
+   to fly or not:
+
+   - "0": Indicates that the client wants to stop flying
+   - "1": Indicates that the client wants to start flying
+
+3.5.  Game Result
+
+   The game_result is an enumeration representing the outcome of a game:
+
+   - "0": Indicates that nobody won the game (a draw)
+   - "x": Indicates that the player with ID "x" won the game
+
+4.  Response Types
+
+   The protocol defines two fundamental response types:
+
+   OK
+      Indicates that the client/server correctly parsed and interpreted
+      the information sent in the command, and the information is 
+      logically consistent with the current game state.
+
+   ERROR
+      Indicates that the client/server encountered an error while parsing
+      or interpreting the information sent in the command, or the
+      information conflicts with the current game state.
+
+4.1.  ID Response Format
+
+   Responses to ID commands:
+
+   OK
+      Meaning: The client parsed and interpreted the ID correctly.
+      Format: OK
+
+   ERROR Invalid ID
+      Meaning: The client encountered an error while parsing or
+      interpreting the ID.
+      Format: ERROR Invalid ID
+
+
+                        Informational                      [Page 7]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+4.2.  MAP Response Format
+
+   Responses to MAP commands:
+
+   OK
+      Meaning: The client correctly parsed and interpreted the length and
+      map data.
+      Format: OK
+
+   ERROR Character not recognized: '<char>'
+      Meaning: The map includes an unknown character that is not part of
+      the objects list.
+      Format: ERROR Character not recognized: '<char>'
+      
+   ERROR Map length mismatch
+      Meaning: The map received does not match the length provided.
+      Format: ERROR Map length mismatch
+
+4.3.  READY Response Format
+
+   Responses to READY commands:
+
+   OK
+      Meaning: The server correctly registered that the client is ready.
+      Format: OK
+
+   ERROR Already ready
+      Meaning: The server already registered that the client is ready.
+      Format: ERROR Already ready
+
+   ERROR Not accepting ready now
+      Meaning: The server is not waiting for clients, indicating that 
+      the game has already started or has finished.
+      Format: ERROR Not accepting ready now
+
+4.4.  START Response Format
+
+   Responses to START commands:
+
+   OK
+      Meaning: The client successfully started the game.
+      Format: OK
+
+   ERROR Start command unexpected
+      Meaning: The client is not ready to start the game.
+      Format: ERROR Start command unexpected
+
+
+                        Informational                      [Page 8]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+4.5.  PLAYER Response Format
+
+   Responses to PLAYER commands:
+
+   OK
+      Meaning: The client correctly parsed and interpreted the updated
+      player data.
+      Format: OK
+
+   ERROR Invalid number of data
+      Meaning: The number of data elements received is not as expected.
+      Format: ERROR Invalid number of data
+
+   ERROR Invalid player ID
+      Meaning: The player ID received is not a valid number.
+      Format: ERROR Invalid player ID
+
+   ERROR Unknown player ID
+      Meaning: The player ID received is not associated with a player.
+      Format: ERROR Unknown player ID
+
+   ERROR Invalid x coordinate
+      Meaning: The client encountered an error parsing the x coordinate.
+      Format: ERROR Invalid x coordinate
+
+   ERROR Invalid y coordinate
+      Meaning: The client encountered an error parsing the y coordinate.
+      Format: ERROR Invalid y coordinate
+
+   ERROR Invalid score
+      Meaning: The client encountered an error parsing the score.
+      Format: ERROR Invalid score
+
+   ERROR Invalid fly status
+      Meaning: The client encountered an error parsing the fly status.
+      Format: ERROR Invalid fly status
+
+4.6.  FLY Response Format
+
+   Responses to FLY commands:
+
+   OK
+      Meaning: The server correctly parsed, interpreted, and updated the
+      fly status of the player.
+      Format: OK
+
+
+                        Informational                      [Page 9]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+   ERROR Invalid fly status
+      Meaning: The server encountered an error parsing the fly status.
+      Format: ERROR Invalid fly status
+
+   ERROR Command not allowed
+      Meaning: The command was used when the game was not running.
+      Format: ERROR Command not allowed
+
+4.7.  COIN Response Format
+
+   Responses to COIN commands:
+
+   OK
+      Meaning: The client correctly parsed, interpreted, and updated the
+      coin status for the player.
+      Format: OK
+
+   ERROR Invalid number of data
+      Meaning: The number of data elements received is not as expected.
+      Format: ERROR Invalid number of data
+
+   ERROR Invalid player ID
+      Meaning: The player ID received is not a valid number.
+      Format: ERROR Invalid player ID
+
+   ERROR Unknown player ID
+      Meaning: The player ID received is not associated with a player.
+      Format: ERROR Unknown player ID
+
+   ERROR Invalid x coordinate
+      Meaning: The client encountered an error parsing the x coordinate.
+      Format: ERROR Invalid x coordinate
+
+   ERROR Invalid y coordinate
+      Meaning: The client encountered an error parsing the y coordinate.
+      Format: ERROR Invalid y coordinate
+
+4.8.  END Response Format
+
+   Responses to END commands:
+
+   OK
+      Meaning: The client correctly parsed, interpreted, and stopped the
+      game.
+      Format: OK
+
+
+                        Informational                     [Page 10]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+   ERROR Invalid game result
+      Meaning: The client encountered an error parsing the game result.
+      Format: ERROR Invalid game result
+
+5.  Protocol Interaction Example
+
+   The following example demonstrates the interaction between one server
+   and one client throughout a complete game session:
+
+   # Client connecting to Server...
+   # Initialization
+   [SERVER] "ID 1"
+   [CLIENT] "OK"
+   [SERVER] "MAP 95 _________..."
+   [CLIENT] "OK"
+   [CLIENT] "READY"
+   [SERVER] "OK"
+   
+   # Game
+   [SERVER] "START"
+   [CLIENT] "OK"
+   [SERVER] "PLAYER 1 0.0 5.0 0 0"
+   [CLIENT] "OK"
+   [SERVER] "PLAYER 1 1.0 4.9 0 0"
+   [CLIENT] "OK"
+   [SERVER] "PLAYER 1 2.0 4.8 0 0"
+   [CLIENT] "OK"
+   [CLIENT] "FLY 1"
+   [SERVER] "OK"
+   [SERVER] "PLAYER 1 3.0 4.9 0 1"
+   [CLIENT] "OK"
+   [SERVER] "PLAYER 1 4.0 5.0 0 1"
+   [CLIENT] "OK"
+   [SERVER] "PLAYER 1 5.0 5.1 0 1"
+   [CLIENT] "OK"
+   [SERVER] "PLAYER 1 6.0 5.2 0 1"
+   [CLIENT] "OK"
+   [SERVER] "COIN 1 7 6"
+   [CLIENT] "OK"
+   [CLIENT] "FLY 0"
+   [SERVER] "OK"
+   [SERVER] "PLAYER 1 7.0 5.2 1 0"
+   [CLIENT] "OK"
+   
+   # Ending
+   [SERVER] "END 1"
+   [CLIENT] "OK"
+
+
+                        Informational                     [Page 11]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+6.  Security Considerations
+
+   The Jetpack Communication Protocol is designed for use in controlled
+   gaming environments and does not incorporate authentication or
+   encryption mechanisms. As such, it should not be used over public
+   networks without additional security measures.
+
+   Implementers should be aware of the following security considerations:
+
+   - Input validation: All command inputs should be properly validated
+     to prevent buffer overflows or other injection attacks.
+
+   - Resource limitations: Implementations should set reasonable limits
+     on map sizes and command processing to prevent denial-of-service
+     attacks.
+
+   - Access control: In multi-player environments, the server should
+     verify that a client can only control its assigned player.
+
+
+                        Informational                     [Page 12]
+
+RFC XXXX            Jetpack Communication Protocol         April 2025
+
+
+7.  IANA Considerations
+
+   This document has no IANA actions.
+
+8.  References
+
+8.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+Author's Address
+
+   Evan Mahe
+   Epitech School
+   France
+
+   Email: evan.mahe@epitech.eu
+
+   Renaud Manet
+   Epitech School
+   France
+
+   Email: renaud.manet@epitech.eu
+
+   Paul Chaillaud
+   Epitech School
+   France
+
+   Email: paul.chaillad@epitech.eu
+
+Co-Author's Address
+
+   Enoal Fauchille--Bolle
+   Epitech School
+   France
+
+   Email: enoal.fauchille--bolle@epitech.eu
+
+   Tom Feldkamp
+   Epitech School
+   France
+
+   Email: tom.feldkamp@epitech.eu
+
+   Kylian Chandelier
+   Epitech School
+   France
+
+   Email: kylian.chandelier@epitech.eu
+
+                        Informational                     [Page 13]
