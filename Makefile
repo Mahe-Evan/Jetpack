@@ -5,20 +5,17 @@
 ## Main Makefile
 ##
 
-#Executable names
 SERVER_NAME	=	jetpack_server
 CLIENT_NAME	=	jetpack_client
 
-
 TESTS_NAME	=	unit_tests.out
 
-# Folders name
 SERVER_DIR	=	./server/
-GL	=	./sources/globals/
-MISC	=	./sources/miscellaneous/
-TESTS	=	./tests/
+CLIENT_DIR	=	./client/
+GL		=	./sources/globals/
+MISC		=	./sources/miscellaneous/
+TESTS		=	./tests/
 
-#Sources
 SERVER_MAIN	=	server/main.c
 SERVER_SRC	=	\
 	$(SERVER_DIR)set_server.c	\
@@ -32,58 +29,69 @@ SERVER_SRC	=	\
 
 CLIENT_MAIN	=	client/main.cpp
 CLIENT_SRC	=	\
+	$(CLIENT_DIR)assetManager.cpp	\
+	$(CLIENT_DIR)commandHandler.cpp	\
+	$(CLIENT_DIR)gameRenderer.cpp	\
+	$(CLIENT_DIR)gameState.cpp	\
+	$(CLIENT_DIR)networkManager.cpp	\
+	$(CLIENT_DIR)player.cpp	\
 
 TESTS_SRC	=	\
 
-#Headers folder
 INCLUDES	=	-I./includes/	\
+		-I./includes/client/
 
-
-#GCC Flags
 ERROR	=	-Wall -Wextra -Wshadow #-Werror
-#Compilation Flags
-CFLAGS	+=	$(ERROR) -I$(INCLUDES) -g
-#Pre Compilation
-CC	:=	gcc
-CP	:=	g++
+CFLAGS	+=	$(ERROR) $(INCLUDES) -g
+CXXFLAGS+=	$(ERROR) $(INCLUDES) -g -std=c++11
 
-OBJ	=	$(SERVER_SRC:.c=.o)	\
-		$(CLIENT_SRC:.cpp=.o)
+CC	:=	gcc
+CXX	:=	g++
+
+SFML_LIBS = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
+
+SERVER_OBJ	=	$(SERVER_SRC:.c=.o) $(SERVER_MAIN:.c=.o)
+CLIENT_OBJ	=	$(CLIENT_SRC:.cpp=.o) $(CLIENT_MAIN:.cpp=.o)
+
 DEP	=	$(SERVER_SRC:.c=.d)	\
 		$(CLIENT_SRC:.cpp=.d)	\
-		$(MAIN:.c=.d)
+		$(SERVER_MAIN:.c=.d)	\
+		$(CLIENT_MAIN:.cpp=.d)
 
-#Libraries
 LIBS	=	./libs/
 LLIBS	=	-L$(LIBS)
-LIB_	=	#$(LIBS)put a path to a library here
 
-
-
-#Compilation Flags
 FLAGS	=	$(CFLAGS) $(LLIBS)
-#Test Compilation Flags
-UNIT_FLAGS	=	$(FLAGS) -lcriterion --coverage	-lSDL2
+UNIT_FLAGS	=	$(FLAGS) -lcriterion --coverage
 
-all:	$(SERVER_NAME) #$(CLIENT_NAME)
+all:	$(SERVER_NAME) $(CLIENT_NAME)
 
-$(SERVER_NAME): $(OBJ) $(SERVER_MAIN:.c=.o) $(LIB_)
-	$(CC) -o $(SERVER_NAME) $(OBJ) $(SERVER_MAIN:.c=.o) $(FLAGS)
+$(SERVER_NAME): $(SERVER_OBJ)
+	$(CC) -o $(SERVER_NAME) $(SERVER_OBJ) $(FLAGS)
 
-$(CLIENT_NAME): $(OBJ) $(CLIENT_MAIN:.cpp=.o) $(LIB_)
-	$(CC) -o $(CLIENT_NAME) $(OBJ) $(CLIENT_MAIN:.cpp=.o) $(FLAGS)
+$(CLIENT_NAME): $(CLIENT_OBJ)
+	$(CXX) -o $(CLIENT_NAME) $(CLIENT_OBJ) $(CXXFLAGS) $(SFML_LIBS)
+
+server: $(SERVER_NAME)
+
+client: $(CLIENT_NAME)
 
 -include $(DEP)
 %.o: %.c
-	$(COMPILE.c) $< -o $@ -MMD -MF $*.d -MT $@ $(CFLAGS)
+	$(CC) -c $< -o $@ -MMD -MF $*.d -MT $@ $(CFLAGS)
 
+%.o: %.cpp
+	$(CXX) -c $< -o $@ -MMD -MF $*.d -MT $@ $(CXXFLAGS)
+
+setup:
+	@mkdir -p ./client
+	@mkdir -p ./includes/client
+	@mkdir -p ./assets
 
 clean:
-	rm -f $(OBJ)
-	rm -f $(SERVER_MAIN:.c=.o)
-	rm -f $(CLIENT_MAIN:.cpp=.o)
+	rm -f $(SERVER_OBJ)
+	rm -f $(CLIENT_OBJ)
 	rm -f $(DEP)
-	rm -f server/main.d
 	rm -f *.gcno
 	rm -f *.gcda
 	rm -f src/*.gcno src/*.gcda
@@ -96,7 +104,8 @@ clean:
 libclean: clean
 
 fclean:	libclean
-	rm -f $(NAME)
+	rm -f $(SERVER_NAME)
+	rm -f $(CLIENT_NAME)
 	rm -f $(TESTS_NAME)
 	find -name "lib*.a" -delete
 
@@ -108,6 +117,4 @@ tests_run: fclean
 	gcovr --exclude tests/
 	gcovr --exclude tests/ --branches
 
-.PHONY:	all clean	libclean	\
-		fclean	re	remake		\
-		tests_run	unit_tests	gcovr
+.PHONY:	all clean libclean fclean re remake tests_run unit_tests gcovr setup server client
