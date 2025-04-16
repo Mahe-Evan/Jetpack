@@ -1,5 +1,5 @@
-Network Working Group                          E. Mahe R.Manet P.Chaillaud
-Request for Comments: XXXX                                 Epitech School
+Network Working Group                           E.Mahe R.Manet P.Chaillaud
+Request for Comments: XXXX                                  Epitech School
 Category: Informational                                     April 14, 2025
                                                      
 

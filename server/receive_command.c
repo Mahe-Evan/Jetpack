@@ -5,21 +5,26 @@
 ** check and call the commands
 */
 
-#include "../includes/server.h"
-#include "../includes/functs.h"
-#include "../includes/client.h"
+#include <stdbool.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <stdio.h>
+#include "server.h"
+#include "jetpack.h"
 
-void receive_command(server_t *server, client_t *client, client_t **clients)
+void receive_command(server_t *restrict server, player_t *restrict player,
+    int client_index, bool ready)
 {
-    if (strncasecmp(client->command, "FLY", 3) == 0) {
-        player_axys_y(server, client, 0, true);
-        printf("FLY\n");
-    }
-    if (strncasecmp(client->command, "MAP", 3) == 0) {
-        printf("MAP\n");
+    char is_flying = '0';
+
+    if (strlen(player->command) == 5 &&
+        sscanf(player->command, "FLY %c", &is_flying) == 1) {
+        player->is_flying = is_flying - '0';
+        printf("FLY %c FROM %d\n", is_flying, client_index);
+    } else if (!ready && strcmp(player->command, "READY") == 0) {
+        server->game.ready_player[client_index] = true;
+        printf("READY FROM %d\n", client_index + 1);
     }
     return;
 }

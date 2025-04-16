@@ -8,8 +8,6 @@
 #ifndef SERVER_H_
     #define SERVER_H_
 
-    #include <sys/socket.h>
-    #include <netinet/in.h>
     #include <poll.h>
     #include <stdbool.h>
 
@@ -17,25 +15,34 @@
     #define TIMEOUT 5000
 
 typedef struct position {
-    int x;
-    int y;
+    double x;
+    double y;
 } position_t;
 
+typedef struct coin {
+    unsigned long player_id;
+    position_t pos;
+} coin_t;
+
 typedef struct game {
-    char **map;
-    position_t positions[MAX_CLIENTS];
+    char *map[10];
+    coin_t *coins_pos;
+    bool ready_player[MAX_CLIENTS];
+    coin_t **collected_coins;
 } game_t;
 
+typedef struct client {
+    char command[128];
+    position_t pos;
+    bool is_flying;
+    unsigned int nb_coins;
+} player_t, client_t;
+
 typedef struct server_s {
-    int fd_server;
-    struct pollfd fds[MAX_CLIENTS + 1];
-    int port;
-    int status;
-    struct sockaddr_in server_addr;
-    socklen_t addr_len;
-    int poll;
+    bool debug_mode;
+    struct pollfd fds[MAX_CLIENTS + 2];
     game_t game;
-    bool debug;
+    player_t player[MAX_CLIENTS];
 } server_t;
 
 #endif /* !SERVER_H_ */

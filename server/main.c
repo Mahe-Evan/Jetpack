@@ -5,52 +5,30 @@
 ** epitech ftp
 */
 
-#include "../includes/server.h"
-#include "../includes/functs.h"
-#include "../includes/client.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include "server.h"
+#include "jetpack.h"
 
-static void set_positions(client_t *client)
+int main(int ac[[gnu::unused]], char *av[])
 {
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        client->game.positions[i].x = 0;
-        client->game.positions[i].y = 0;
+    server_t server = set_server(av);
+    int ret_val = EXIT_SUCCESS;
+
+    if (server.fds[1].fd == -1) {
+        return EXIT_FAILURE;
     }
-}
-
-static void set_client(client_t **client)
-{
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        client[i] = malloc(sizeof(client_t));
-        if (client[i] == NULL) {
-            free_all(NULL, client);
-            exit(84);
+    ret_val = loop(&server);
+    for (int i = 0; i < MAP_LEN; i++) {
+        free(server.game.map[i]);
+    }
+    free(server.game.coins_pos);
+    free(server.game.collected_coins);
+    for (int i = 0; i < MAX_CLIENTS + 2; i++) {
+        if (server.fds[i].fd != -1) {
+            close(server.fds[i].fd);
         }
-        client[i]->client_fd = -1;
-        client[i]->data_fd = 0;
-        client[i]->client_addr.sin_family = AF_INET;
-        client[i]->client_addr.sin_addr.s_addr = INADDR_ANY;
-        client[i]->client_addr.sin_port = 0;
-        client[i]->command[0] = '\0';
-        client[i]->status = 0;
-        client[i]->game.map = NULL;
-        set_positions(client[i]);
     }
-}
-
-int main(int ac, char **av)
-{
-    server_t *server = malloc(sizeof(server_t));
-    client_t *client[MAX_CLIENTS];
-
-    set_client(client);
-    if (server == NULL || (ac != 5 && ac != 6) ||
-        set_server(ac, av, server) == 84) {
-        free_all(server, client);
-        return 84;
-    }
-    loop(server, client);
-    free_all(server, client);
-    return 0;
+    return ret_val;
 }

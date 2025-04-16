@@ -5,51 +5,44 @@
 ** handle existing clients
 */
 
-#include "../includes/server.h"
-#include "../includes/functs.h"
-#include "../includes/client.h"
-#include <stdio.h>
+#include <stdbool.h>
 #include <unistd.h>
+#include "server.h"
+#include "jetpack.h"
 
-static void remove_newline(char *str)
+static void remove_newline(char *restrict str)
 {
-    for (int i = 0; str[i]; i++) {
-        if (str[i] == '\r') {
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (str[i] == '\r' || str[i] == '\n') {
             str[i] = '\0';
-            return;
         }
     }
+    return;
 }
 
-static void handle_client_command(server_t *server, int index,
-    client_t *client, client_t **clients)
+static void handle_client_command(server_t *restrict server, int index,
+    player_t *restrict player, bool ready)
 {
     ssize_t bytes_read = read(server->fds[index].fd,
-        client->command, 128);
+        player->command, sizeof(player->command));
 
-    remove_newline(client->command);
     if (bytes_read > 0) {
-        client->command[bytes_read] = '\0';
-        receive_command(server, client, clients);
+        remove_newline(player->command);
+        receive_command(server, player, index - 2, ready);
     }
+    return;
 }
 
-void send_good_client(server_t *server, client_t **client, int i)
+void handle_existing_clients(server_t *restrict server, bool ready)
 {
-    for (int j = 0; j < MAX_CLIENTS; j++) {
-        if (client[j]->client_fd == server->fds[i].fd) {
-            handle_client_command(server, i, client[j], client);
-        }
-    }
-}
-
-void handle_existing_clients(server_t *server, client_t **client)
-{
-    for (int i = 0; i < MAX_CLIENTS; i++) {
+    handle_game_logic(server, ready);
+    for (int i = 2; server->fds[i].fd != -1 && i < MAX_CLIENTS + 2; i++) {
         if (server->fds[i].revents & POLLIN) {
-            send_good_client(server, client, i);
-        } else {
-            send_command(server, client, i);
+            handle_client_command(server, i, &server->player[i - 2], ready);
+        }
+        if (ready && server->game.ready_player[i - 2]) {
+            send_command(server, i);
         }
     }
+    return;
 }

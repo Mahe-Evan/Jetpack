@@ -5,21 +5,63 @@
 ** send commands
 */
 
-#include "../includes/server.h"
-#include "../includes/functs.h"
-#include "../includes/client.h"
+#include <stddef.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
+#include "server.h"
 
-void send_command(server_t *server, client_t **client, int i)
+static void send_coins(coin_t **collected_coins, int client_fd)
 {
-    if (server->game.positions[i].y != 0) {
-        for (int j = 0; j < MAX_CLIENTS; j++) {
-            write(client[j]->client_fd,
-                client[j]->game.map[server->game.positions[i].y],
-                strlen(client[j]->game.map[server->game.positions[i].y]));
+    int coin_msg_len = 0;
+    char *coin_msg = NULL;
+
+    while (collected_coins != NULL) {
+        coin_msg_len = snprintf(NULL, 0, "COIN %lu %d %d\r\n",
+            (*collected_coins)->player_id,
+            (int)(*collected_coins)->pos.x, (int)(*collected_coins)->pos.y);
+        coin_msg = malloc(coin_msg_len + 1);
+        snprintf(coin_msg, coin_msg_len + 1, "COIN %lu %d %d\r\n",
+            (*collected_coins)->player_id,
+            (int)(*collected_coins)->pos.x, (int)(*collected_coins)->pos.y);
+        write(client_fd, coin_msg, coin_msg_len);
+        puts(coin_msg);
+        free(coin_msg);
+        coin_msg = NULL;
+        collected_coins++;
+    }
+    return;
+}
+
+static void send_player(unsigned long player_id,
+    position_t *restrict player_position, client_t *restrict player,
+    int player_fd)
+{
+    int msg_len = snprintf(NULL, 0, "PLAYER %lu %f %f %u %c\r\n",
+        player_id, player_position->x, player_position->y,
+        player->nb_coins, player->is_flying + '0');
+    char *msg = malloc(msg_len + 1);
+
+    snprintf(msg, msg_len + 1, "PLAYER %lu %f %f %u %c\r\n",
+        player_id, player_position->x, player_position->y,
+        player->nb_coins, player->is_flying + '0');
+    write(player_fd, msg, msg_len);
+    puts(msg);
+    free(msg);
+    return;
+}
+
+void send_command(server_t *restrict server, int index)
+{
+    for (int i = 0; server->fds[i + 2].fd != -1 && i < MAX_CLIENTS; i++) {
+        if (server->game.ready_player[i]) {
+            send_player(i + 1, &server->player[i].pos,
+                &server->player[i], server->fds[index].fd);
         }
     }
+    send_coins(server->game.collected_coins, server->fds[index].fd);
+    return;
 }
+
+// END id_winner

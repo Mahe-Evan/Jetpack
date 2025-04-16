@@ -18,14 +18,14 @@ TESTS		=	./tests/
 
 SERVER_MAIN	=	server/main.c
 SERVER_SRC	=	\
-	$(SERVER_DIR)set_server.c	\
-	$(SERVER_DIR)parse_map.c	\
-	$(SERVER_DIR)loop.c	\
 	$(SERVER_DIR)handle_clients.c	\
-	$(SERVER_DIR)receive_command.c	\
+	$(SERVER_DIR)loop.c						\
+	$(SERVER_DIR)parse_cmd_args.c	\
+	$(SERVER_DIR)receive_command.c\
 	$(SERVER_DIR)send_commands.c	\
-	$(SERVER_DIR)free_all.c	\
-	$(SERVER_DIR)game_logic.c	\
+	$(SERVER_DIR)set_server.c			\
+	$(SERVER_DIR)set_signal.c			\
+	# $(SERVER_DIR)game_logic.c			\
 
 CLIENT_MAIN	=	client/main.cpp
 CLIENT_SRC	=	\
@@ -38,12 +38,13 @@ CLIENT_SRC	=	\
 
 TESTS_SRC	=	\
 
-INCLUDES	=	-I./includes/	\
-		-I./includes/client/
+#Headers folder
+INCLUDES	=	includes/	\
+
 
 ERROR	=	-Wall -Wextra -Wshadow #-Werror
-CFLAGS	+=	$(ERROR) $(INCLUDES) -g
-CXXFLAGS+=	$(ERROR) $(INCLUDES) -g -std=c++11
+CFLAGS	+=	$(ERROR) -I$(INCLUDES) -g
+CXXFLAGS+=	$(ERROR) -I$(INCLUDES) -g -std=c++11
 
 CC	:=	gcc
 CXX	:=	g++
@@ -104,8 +105,7 @@ clean:
 libclean: clean
 
 fclean:	libclean
-	rm -f $(SERVER_NAME)
-	rm -f $(CLIENT_NAME)
+	rm -f $(SERVER_NAME) $(CLIENT_NAME)
 	rm -f $(TESTS_NAME)
 	find -name "lib*.a" -delete
 
@@ -117,4 +117,5 @@ tests_run: fclean
 	gcovr --exclude tests/
 	gcovr --exclude tests/ --branches
 
-.PHONY:	all clean libclean fclean re remake tests_run unit_tests gcovr setup server client
+.PHONY:	all clean libclean fclean re \
+	remake tests_run unit_tests gcovr setup server client
