@@ -35,10 +35,16 @@ void GameRenderer::drawBackground(const GameState &gameState)
     sf::Sprite backgroundSprite = assetManager->getBackgroundSprite();
 
     float offset = -static_cast<float>(gameState.mapOffset);
+    float windowHeight = window->getSize().y;
+    float scale =
+        windowHeight / backgroundSprite.getLocalBounds().height;
+    backgroundSprite.setScale(scale, scale);
 
     for (int i = 0; i < 3; i++) {
         backgroundSprite.setPosition(
-            offset + i * backgroundSprite.getLocalBounds().width, 0);
+            offset +
+                i * backgroundSprite.getLocalBounds().width * scale,
+            0);
         window->draw(backgroundSprite);
     }
 }
@@ -48,21 +54,32 @@ void GameRenderer::drawMap(const GameState &gameState)
     if (gameState.map.empty()) {
         return;
     }
-
     sf::Sprite coinSprite = assetManager->getCoinSprite();
     sf::Sprite electricSprite = assetManager->getElectricSprite();
 
-    const float TILE_SIZE = 40.0f;
+    coinSprite.setTextureRect(sf::IntRect(0, 0, 200, 200));
+    electricSprite.setTextureRect(sf::IntRect(0, 0, 100, 100));
+
+    coinSprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
+    electricSprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
+
+    const float TILE_SIZE = 55.0f;
+    const float windowWidth = window->getSize().x;
+    const float windowHeight = window->getSize().y;
+
+    size_t startX = gameState.mapOffset / TILE_SIZE;
+    size_t endX =
+        startX + static_cast<size_t>(windowWidth / TILE_SIZE) + 2;
 
     for (size_t y = 0; y < gameState.map.size(); y++) {
-        const std::string &row = gameState.map[y];
-        for (size_t x = 0; x < row.length(); x++) {
-            float xPos = x * TILE_SIZE - gameState.mapOffset;
-            float yPos = y * TILE_SIZE;
+        float yPos = y * TILE_SIZE + 5;
+        if (yPos < -TILE_SIZE || yPos > windowHeight) {
+            continue;
+        }
 
-            if (xPos < -TILE_SIZE || xPos > window->getSize().x) {
-                continue;
-            }
+        const std::string &row = gameState.map[y];
+        for (size_t x = startX; x < endX && x < row.length(); x++) {
+            float xPos = x * TILE_SIZE - gameState.mapOffset;
 
             if (row[x] == 'c') {
                 coinSprite.setPosition(xPos, yPos);
@@ -77,21 +94,34 @@ void GameRenderer::drawMap(const GameState &gameState)
 
 void GameRenderer::drawPlayers(const GameState &gameState)
 {
+    const float windowWidth = window->getSize().x;
+    const float windowHeight = window->getSize().y;
+    const float TILE_SIZE = 40.0f;
+
     for (const auto &player : gameState.players) {
+        float xPos = player.x * TILE_SIZE - gameState.mapOffset;
+        float yPos = player.y * TILE_SIZE;
+
+        // Skip rendering players outside the visible area
+        if (xPos < -TILE_SIZE || xPos > windowWidth ||
+            yPos < -TILE_SIZE || yPos > windowHeight) {
+            continue;
+        }
+
         sf::Sprite playerSprite =
             player.flying ? assetManager->getPlayerFlyingSprite()
                           : assetManager->getPlayerNormalSprite();
 
-        playerSprite.setPosition(
-            player.x * 40.0f - gameState.mapOffset, player.y * 40.0f);
+        // Set texture rectangle to only take the first 130x140 pixels
+        playerSprite.setTextureRect(sf::IntRect(0, 0, 130, 140));
+        playerSprite.setPosition(xPos, yPos);
 
         sf::Text idText;
         idText.setFont(assetManager->getFont());
         idText.setString("P" + std::to_string(player.id));
         idText.setCharacterSize(14);
         idText.setFillColor(sf::Color::White);
-        idText.setPosition(player.x * 40.0f - gameState.mapOffset,
-            player.y * 40.0f - 20.0f);
+        idText.setPosition(xPos, yPos - 20.0f);
 
         window->draw(playerSprite);
         window->draw(idText);
