@@ -24,11 +24,17 @@ typedef struct coin {
     position_t pos;
 } coin_t;
 
+typedef struct coins_collected {
+    bool players[MAX_CLIENTS];
+    position_t pos;
+} coins_collected_t;
+
 typedef struct game {
     char *map[10];
-    coin_t *coins_pos;
+    position_t *coins_pos;
+    coins_collected_t *coins_collected;
     bool ready_player[MAX_CLIENTS];
-    coin_t **collected_coins;
+    coin_t collected_coins[MAX_CLIENTS * 2];
 } game_t;
 
 typedef struct client {
