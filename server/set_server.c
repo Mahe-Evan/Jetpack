@@ -5,6 +5,8 @@
 ** set the serveur
 */
 
+#include "jetpack.h"
+#include "server.h"
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -12,8 +14,6 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "jetpack.h"
-#include "server.h"
 
 static void set_poll_fds(server_t *restrict server)
 {
@@ -25,8 +25,8 @@ static void set_poll_fds(server_t *restrict server)
 
 static int set_server_fd(long port_nb)
 {
-    const struct sockaddr_in server_addr = {AF_INET, htons(port_nb),
-        {INADDR_ANY}, {'\0'}};
+    const struct sockaddr_in server_addr = {
+        AF_INET, htons(port_nb), {INADDR_ANY}, {'\0'}};
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (server_fd == -1) {
@@ -34,7 +34,7 @@ static int set_server_fd(long port_nb)
         return -1;
     }
     if (bind(server_fd, (const struct sockaddr *)&server_addr,
-        sizeof(server_addr)) == -1) {
+            sizeof(server_addr)) == -1) {
         perror("bind");
         close(server_fd);
         return -1;
@@ -74,10 +74,11 @@ static size_t get_nb_coins(char *map[static MAP_LEN])
     return nb_coins;
 }
 
-static coin_t *set_coins(char *map[static MAP_LEN])
+static position_t *set_coins(char *map[static MAP_LEN])
 {
     size_t nb_coins = get_nb_coins(map);
-    coin_t *coin_array = malloc(sizeof(coin_t) * (nb_coins + 1));
+    position_t *coin_array =
+        malloc(sizeof(position_t) * (nb_coins + 1));
     int coin_array_index = 0;
     int j = 0;
 
@@ -88,12 +89,12 @@ static coin_t *set_coins(char *map[static MAP_LEN])
             continue;
         }
         if (map[i][j] == 'c') {
-            coin_array[coin_array_index] = (coin_t){-1, {j, i}};
+            coin_array[coin_array_index] = (position_t){j, i};
             coin_array_index++;
         }
         j++;
     }
-    coin_array[nb_coins] = (coin_t){-1, {-1, -1}};
+    coin_array[nb_coins] = (position_t){-1, -1};
     return coin_array;
 }
 
@@ -105,8 +106,19 @@ static game_t set_game(char *map[static MAP_LEN])
         game.map[i] = map[i];
     }
     game.coins_pos = set_coins(map);
+    game.coins_collected =
+        malloc(sizeof(coins_collected_t) * (MAX_CLIENTS * 2));
+    for (int i = 0; i < MAX_CLIENTS * 2; i++) {
+        game.coins_collected[i].pos.x = -1;
+        game.coins_collected[i].pos.y = -1;
+        for (int j = 0; j < MAX_CLIENTS; j++) {
+            game.coins_collected[i].players[j] = false;
+        }
+    }
     set_ready_players(&game);
-    game.collected_coins = NULL;
+    game.collected_coins[0].pos.x = -1;
+    game.collected_coins[0].pos.y = -1;
+    game.collected_coins[0].player_id = 0;
     return game;
 }
 

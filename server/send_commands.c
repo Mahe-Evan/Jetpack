@@ -5,31 +5,29 @@
 ** send commands
 */
 
-#include <stddef.h>
+#include "server.h"
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "server.h"
 
-static void send_coins(coin_t **collected_coins, int client_fd)
+static void send_coins(coin_t *collected_coins, int client_fd)
 {
     int coin_msg_len = 0;
     char *coin_msg = NULL;
 
-    while (collected_coins != NULL) {
+    if (collected_coins != NULL && collected_coins->player_id != 0) {
         coin_msg_len = snprintf(NULL, 0, "COIN %lu %d %d\r\n",
-            (*collected_coins)->player_id,
-            (int)(*collected_coins)->pos.x, (int)(*collected_coins)->pos.y);
+            collected_coins->player_id, (int)collected_coins->pos.x,
+            (int)collected_coins->pos.y);
         coin_msg = malloc(coin_msg_len + 1);
         snprintf(coin_msg, coin_msg_len + 1, "COIN %lu %d %d\r\n",
-            (*collected_coins)->player_id,
-            (int)(*collected_coins)->pos.x, (int)(*collected_coins)->pos.y);
+            collected_coins->player_id, (int)collected_coins->pos.x,
+            (int)collected_coins->pos.y);
         write(client_fd, coin_msg, coin_msg_len);
         puts(coin_msg);
         free(coin_msg);
-        coin_msg = NULL;
-        collected_coins++;
     }
     return;
 }
@@ -54,7 +52,8 @@ static void send_player(unsigned long player_id,
 
 void send_command(server_t *restrict server, int index)
 {
-    for (int i = 0; server->fds[i + 2].fd != -1 && i < MAX_CLIENTS; i++) {
+    for (int i = 0; server->fds[i + 2].fd != -1 && i < MAX_CLIENTS;
+        i++) {
         if (server->game.ready_player[i]) {
             send_player(i + 1, &server->player[i].pos,
                 &server->player[i], server->fds[index].fd);

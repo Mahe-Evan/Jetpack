@@ -31,7 +31,7 @@ static void set_player(int player_fd, char *map[static MAP_LEN])
     return;
 }
 
-static bool handle_new_connection(struct pollfd
+static bool handle_new_connection(pollfd_t
     fds[static restrict MAX_CLIENTS + 2], char *map[static MAP_LEN])
 {
     struct sockaddr_in client_addr;
@@ -73,7 +73,7 @@ static bool check_player_ready(bool ready_player[static restrict MAX_CLIENTS],
 
 static void send_start(bool *restrict is_enough_player_ready,
     bool ready_player[static MAX_CLIENTS],
-    struct pollfd fds[static restrict MAX_CLIENTS + 2])
+    pollfd_t fds[static restrict MAX_CLIENTS + 2])
 {
     *is_enough_player_ready = check_player_ready(ready_player, 2);
     if (!(*is_enough_player_ready)) {
