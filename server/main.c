@@ -5,11 +5,11 @@
 ** epitech ftp
 */
 
+#include "jetpack.h"
+#include "server.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "server.h"
-#include "jetpack.h"
 
 int main(int ac[[gnu::unused]], char *av[])
 {
@@ -24,7 +24,6 @@ int main(int ac[[gnu::unused]], char *av[])
         free(server.game.map[i]);
     }
     free(server.game.coins_pos);
-    free(server.game.collected_coins);
     for (int i = 0; i < MAX_CLIENTS + 2; i++) {
         if (server.fds[i].fd != -1) {
             close(server.fds[i].fd);

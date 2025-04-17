@@ -18,6 +18,8 @@
     #endif
     #define EXIT_FAILURE 84
 
+typedef struct pollfd pollfd_t;
+
 typedef struct parsed_s {
     long port_nb;
     char *map[MAP_LEN];
