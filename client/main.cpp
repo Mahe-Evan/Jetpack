@@ -98,7 +98,18 @@ int main(int argc, char *argv[])
     std::cout << "Press any key to send READY signal" << std::endl;
 
     sf::Clock clock;
+    sf::Clock readyClock;
+    bool readySent = false;
+
     while (window.isOpen()) {
+
+        if (!readySent && !networkManager.hasGameStarted() &&
+            readyClock.getElapsedTime().asSeconds() > 3.0f) {
+            networkManager.sendReady();
+            readySent = true;
+            std::cout << "Automatically sent READY signal"
+                      << std::endl;
+        }
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {

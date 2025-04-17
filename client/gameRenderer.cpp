@@ -8,9 +8,8 @@
 #include "gameRenderer.hpp"
 #include <iostream>
 
-GameRenderer::GameRenderer(
-    sf::RenderWindow *window, AssetManager *assetManager)
-    : window(window), assetManager(assetManager)
+GameRenderer::GameRenderer(sf::RenderWindow *win, AssetManager *am)
+    : window(win), assetManager(am)
 {}
 
 void GameRenderer::render(const GameState &gameState)

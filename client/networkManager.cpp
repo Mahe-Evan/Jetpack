@@ -44,7 +44,8 @@ NetworkManager::NetworkManager()
 
                 std::vector<std::string> newMap;
                 for (int i = 0; i < 10; i++) {
-                    if ((i + 1) * length <= rawMap.length()) {
+                    if ((i + 1) * length <=
+                        static_cast<int>(rawMap.length())) {
                         newMap.push_back(
                             rawMap.substr(i * length, length));
                     } else {
@@ -53,8 +54,8 @@ NetworkManager::NetworkManager()
                     }
                 }
 
-                for (const auto &line : newMap) {
-                    for (char c : line) {
+                for (const auto &mapLine : newMap) {
+                    for (char c : mapLine) {
                         if (c != '_' && c != 'c' && c != 'e') {
                             std::string errorMsg =
                                 "ERROR Character not recognized: '";
@@ -80,7 +81,7 @@ NetworkManager::NetworkManager()
         }
     };
 
-    responseHandlers["START"] = [this](const std::string &line) {
+    responseHandlers["START"] = [this](const std::string & /*line*/) {
         gameStarted = true;
         sendCommand("OK");
     };
@@ -394,6 +395,8 @@ void NetworkManager::processData(const std::string &data)
     std::istringstream iss(data);
     std::string command;
     iss >> command;
+
+    std::cout << "Received command: " << command << std::endl;
 
     auto it = responseHandlers.find(command);
     if (it != responseHandlers.end()) {

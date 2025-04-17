@@ -8,11 +8,10 @@
 #include "commandHandler.hpp"
 #include <iostream>
 
-CommandHandler::CommandHandler(NetworkManager *networkManager)
-    : networkManager(networkManager), isJetpackActive(false),
-      isLeftPressed(false), isRightPressed(false),
-      jetpackCooldown(0.0f), movementCooldown(0.0f),
-      isReadySent(false)
+CommandHandler::CommandHandler(NetworkManager *nmgr)
+    : networkManager(nmgr), isJetpackActive(false),
+      isLeftPressed(false), isRightPressed(false), isReadySent(false),
+      jetpackCooldown(0.0f), movementCooldown(0.0f)
 {}
 
 void CommandHandler::handleEvent(const sf::Event &event)
