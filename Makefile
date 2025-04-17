@@ -25,7 +25,7 @@ SERVER_SRC	=	\
 	$(SERVER_DIR)send_commands.c	\
 	$(SERVER_DIR)set_server.c			\
 	$(SERVER_DIR)set_signal.c			\
-	# $(SERVER_DIR)game_logic.c			\
+	$(SERVER_DIR)game_logic.c			\
 
 CLIENT_MAIN	=	client/main.cpp
 CLIENT_SRC	=	\
