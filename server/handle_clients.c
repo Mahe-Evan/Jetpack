@@ -9,6 +9,7 @@
 #include "server.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 static void remove_newline(char *restrict str)
@@ -38,8 +39,47 @@ static void handle_client_command(server_t *restrict server,
     return;
 }
 
-void handle_existing_clients(server_t *restrict server, bool ready)
+static void check_player_most_coins(
+    server_t *restrict server, int index)
 {
+    if (server->player[index].nb_coins >
+        server->player[server->winner].nb_coins) {
+        server->winner = index;
+    }
+}
+
+static bool end_line_finished(server_t *restrict server)
+{
+    if (server->player[0].pos.x >= strlen(server->game.map[0]) - 1) {
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            check_player_most_coins(server, i);
+        }
+        return true;
+    }
+    return false;
+}
+
+static bool check_end_game(server_t *restrict server)
+{
+    int alive_count = 0;
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (server->is_alive[i] == true) {
+            alive_count++;
+            server->winner = i;
+        }
+    }
+    if (alive_count == 1) {
+        return true;
+    }
+    server->winner = 0;
+    return end_line_finished(server);
+}
+
+bool handle_existing_clients(server_t *restrict server, bool ready)
+{
+    bool game_finished = check_end_game(server);
+
     handle_game_logic(server, ready);
     for (int i = 2; server->fds[i].fd != -1 && i < MAX_CLIENTS + 2;
         i++) {
@@ -48,8 +88,8 @@ void handle_existing_clients(server_t *restrict server, bool ready)
                 server, i, &server->player[i - 2], ready);
         }
         if (ready && server->game.ready_player[i - 2]) {
-            send_command(server, i);
+            send_command(server, i, game_finished);
         }
     }
-    return;
+    return true;
 }

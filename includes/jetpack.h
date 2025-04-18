@@ -36,11 +36,11 @@ bool handle_signal(struct pollfd *restrict pfd);
 
 int loop(server_t *restrict server);
 
-void handle_existing_clients(server_t *restrict server, bool ready);
+bool handle_existing_clients(server_t *restrict server, bool ready);
 
 void receive_command(server_t *restrict server, player_t *restrict player,
     int client_index, bool ready);
-void send_command(server_t *restrict server, int index);
+void send_command(server_t *restrict server, int index, bool game_finished);
 
 void handle_game_logic(server_t *restrict server, bool ready);
 
