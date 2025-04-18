@@ -102,7 +102,6 @@ void GameRenderer::drawPlayers(const GameState &gameState)
         float xPos = player.x * TILE_SIZE - gameState.mapOffset;
         float yPos = player.y * TILE_SIZE;
 
-        // Skip rendering players outside the visible area
         if (xPos < -TILE_SIZE || xPos > windowWidth ||
             yPos < -TILE_SIZE || yPos > windowHeight) {
             continue;
@@ -112,7 +111,6 @@ void GameRenderer::drawPlayers(const GameState &gameState)
             player.flying ? assetManager->getPlayerFlyingSprite()
                           : assetManager->getPlayerNormalSprite();
 
-        // Set texture rectangle to only take the first 130x140 pixels
         playerSprite.setTextureRect(sf::IntRect(0, 0, 130, 140));
         playerSprite.setPosition(xPos, yPos);
 
@@ -121,7 +119,7 @@ void GameRenderer::drawPlayers(const GameState &gameState)
         idText.setString("P" + std::to_string(player.id));
         idText.setCharacterSize(14);
         idText.setFillColor(sf::Color::White);
-        idText.setPosition(xPos, yPos - 20.0f);
+        idText.setPosition(xPos, yPos * (windowHeight / 10));
 
         window->draw(playerSprite);
         window->draw(idText);
