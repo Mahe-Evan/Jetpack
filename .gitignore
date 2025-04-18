@@ -30,3 +30,4 @@ coverage
 log.bin
 bun.lock
 node_modules
+*.d
