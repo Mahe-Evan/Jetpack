@@ -10,12 +10,32 @@
 #include <time.h>
 #include <unistd.h>
 
+static void check_electricity_collision(
+    server_t *restrict server, int player_index)
+{
+    for (int i = 0; server->game.map[i] != NULL; i++) {
+        for (int j = 0; server->game.map[i][j] != '\0'; j++) {
+            if (server->game.map[i][j] == 'E' &&
+                server->player[player_index].pos.x == j &&
+                server->player[player_index].pos.y == i) {
+                server->player[player_index].is_flying = true;
+                return;
+            }
+        }
+    }
+}
+
 static void check_player_collision(
     server_t *restrict server, int player_index)
 {
     if (server->game.coins_pos == NULL)
         return;
     for (int i = 0; server->game.coins_pos[i].x != -1.; i++) {
+        printf("Player %d: pos (%f, %f)\n", player_index,
+            server->player[player_index].pos.x,
+            server->player[player_index].pos.y);
+        printf("Coin %d: pos (%f, %f)\n", i,
+            server->game.coins_pos[i].x, server->game.coins_pos[i].y);
         if (server->player[player_index].pos.x ==
                 server->game.coins_pos[i].x &&
             server->player[player_index].pos.y ==
@@ -29,6 +49,7 @@ static void check_player_collision(
                 server->game.coins_pos[i].x;
             server->game.coins_collected[i].pos.y =
                 server->game.coins_pos[i].y;
+            server->player[player_index].is_flying = false;
             break;
         }
     }
@@ -73,6 +94,8 @@ void handle_game_logic(server_t *restrict server, bool ready)
         if (server->player[i].pos.y > 10) {
             server->player[i].pos.y = 10;
         }
+        server->player[i].pos.x += 0.1;
+        //   check_electricity_collision(server, i);
         check_player_collision(server, i);
     }
 }
