@@ -50,10 +50,27 @@ static void send_player(unsigned long player_id,
     return;
 }
 
-void send_command(server_t *restrict server, int index)
+static void send_winner(server_t *restrict server)
+{
+    int msg_len = snprintf(NULL, 0, "END %d\r\n", server->winner);
+    char *msg = malloc(msg_len + 1);
+
+    snprintf(msg, msg_len + 1, "END %d\r\n", server->winner);
+    for (int i = 2; server->fds[i].fd != -1 && i < MAX_CLIENTS + 2; i++) {
+        write(server->fds[i].fd, msg, msg_len);
+    }
+    puts(msg);
+    free(msg);
+    return;
+}
+
+void send_command(server_t *restrict server, int index, bool game_finished)
 {
     for (int i = 0; server->fds[i + 2].fd != -1 && i < MAX_CLIENTS;
         i++) {
+        if (game_finished) {
+            return send_winner(server);
+        }
         if (server->game.ready_player[i]) {
             send_player(i + 1, &server->player[i].pos,
                 &server->player[i], server->fds[index].fd);
