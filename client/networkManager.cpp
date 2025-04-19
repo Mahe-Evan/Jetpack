@@ -30,6 +30,7 @@ NetworkManager::NetworkManager()
     int id;
     if (sscanf(line.c_str(), "ID %d", &id) == 1) {
       client_id_ = id;
+      std::cout << "Client ID: " << client_id_ << std::endl;
       SendCommand("OK");
     } else {
       SendCommand("ERROR Invalid ID");

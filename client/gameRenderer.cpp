@@ -50,18 +50,20 @@ void GameRenderer::DrawMap(const GameState& game_state) {
   coin_sprite.setTextureRect(sf::IntRect(0, 0, 200, 200));
   electric_sprite.setTextureRect(sf::IntRect(0, 0, 100, 100));
 
-  coin_sprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
-  electric_sprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
+  coin_sprite.setScale(0.2f, 0.2f);
+  electric_sprite.setScale(0.3f, 0.3f);
 
-  const float kTileSize = 55.0f;
+  const float kTileSize = 40.0f;
   const float window_width = window_.getSize().x;
   const float window_height = window_.getSize().y;
 
   size_t start_x = game_state.map_offset_ / kTileSize;
   size_t end_x = start_x + static_cast<size_t>(window_width / kTileSize) + 2;
 
+  bool debug_mode = true;
+
   for (size_t y = 0; y < game_state.map_.size(); y++) {
-    float y_pos = y * kTileSize + 5;
+    float y_pos = y * kTileSize;
     if (y_pos < -kTileSize || y_pos > window_height) {
       continue;
     }
@@ -71,11 +73,33 @@ void GameRenderer::DrawMap(const GameState& game_state) {
       float x_pos = x * kTileSize - game_state.map_offset_;
 
       if (row[x] == 'c') {
-        coin_sprite.setPosition(x_pos, y_pos);
+        coin_sprite.setPosition(
+            x_pos + (kTileSize - coin_sprite.getGlobalBounds().width) / 2,
+            y_pos + (kTileSize - coin_sprite.getGlobalBounds().height) / 2);
         window_.draw(coin_sprite);
+
+        if (debug_mode) {
+          sf::RectangleShape hitbox(sf::Vector2f(kTileSize, kTileSize));
+          hitbox.setPosition(x_pos, y_pos);
+          hitbox.setFillColor(sf::Color::Transparent);
+          hitbox.setOutlineColor(sf::Color::Red);
+          hitbox.setOutlineThickness(1.0f);
+          window_.draw(hitbox);
+        }
       } else if (row[x] == 'e') {
-        electric_sprite.setPosition(x_pos, y_pos);
+        electric_sprite.setPosition(
+            x_pos + (kTileSize - electric_sprite.getGlobalBounds().width) / 2,
+            y_pos + (kTileSize - electric_sprite.getGlobalBounds().height) / 2);
         window_.draw(electric_sprite);
+
+        if (debug_mode) {
+          sf::RectangleShape hitbox(sf::Vector2f(kTileSize, kTileSize));
+          hitbox.setPosition(x_pos, y_pos);
+          hitbox.setFillColor(sf::Color::Transparent);
+          hitbox.setOutlineColor(sf::Color::Red);
+          hitbox.setOutlineThickness(1.0f);
+          window_.draw(hitbox);
+        }
       }
     }
   }
@@ -85,6 +109,8 @@ void GameRenderer::DrawPlayers(const GameState& game_state) {
   const float window_width = window_.getSize().x;
   const float window_height = window_.getSize().y;
   const float kTileSize = 40.0f;
+
+  bool debug_mode = true;
 
   for (const auto& player : game_state.players_) {
     float x_pos = player.x_ * kTileSize - game_state.map_offset_;
@@ -100,17 +126,30 @@ void GameRenderer::DrawPlayers(const GameState& game_state) {
                                    : asset_manager_.GetPlayerNormalSprite();
 
     player_sprite.setTextureRect(sf::IntRect(0, 0, 130, 140));
-    player_sprite.setPosition(x_pos, y_pos);
+    player_sprite.setScale(0.3f, 0.3f);
+
+    player_sprite.setPosition(
+        x_pos + (kTileSize - player_sprite.getGlobalBounds().width) / 2,
+        y_pos + (kTileSize - player_sprite.getGlobalBounds().height) / 2);
 
     sf::Text id_text;
     id_text.setFont(asset_manager_.GetFont());
     id_text.setString("P" + std::to_string(player.id_));
     id_text.setCharacterSize(14);
     id_text.setFillColor(sf::Color::White);
-    id_text.setPosition(x_pos, y_pos * (window_height / 10));
+    id_text.setPosition(x_pos, y_pos - 20);
 
     window_.draw(player_sprite);
     window_.draw(id_text);
+
+    if (debug_mode) {
+      sf::RectangleShape hitbox(sf::Vector2f(kTileSize, kTileSize));
+      hitbox.setPosition(x_pos, y_pos);
+      hitbox.setFillColor(sf::Color::Transparent);
+      hitbox.setOutlineColor(sf::Color::Green);
+      hitbox.setOutlineThickness(1.0f);
+      window_.draw(hitbox);
+    }
   }
 }
 
@@ -126,8 +165,9 @@ void GameRenderer::DrawUI(const GameState& game_state) {
     if (game_state.game_result_ == 0) {
       status_text.setString("Game Over: Draw!");
     } else {
-      status_text.setString("Game Over: Player " +
-                            std::to_string(game_state.game_result_) + " wins!");
+      int winner_id = game_state.game_result_ + 1;
+      status_text.setString("Game Over: Player " + std::to_string(winner_id) +
+                            " wins!");
     }
   } else {
     status_text.setString("Game in progress");
