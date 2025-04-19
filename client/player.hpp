@@ -5,19 +5,19 @@
 ** Player class for client
 */
 
-#ifndef PLAYER_HPP_
-#define PLAYER_HPP_
+#ifndef PLAYER_H_
+#define PLAYER_H_
 
 class Player {
-  public:
-    Player();
-    ~Player() = default;
+ public:
+  Player();
+  ~Player() = default;
 
-    int id;
-    float x;
-    float y;
-    int score;
-    bool flying;
+  int id_;
+  float x_;
+  float y_;
+  int score_;
+  bool flying_;
 };
 
-#endif /* !PLAYER_HPP_ */
+#endif  // PLAYER_H_

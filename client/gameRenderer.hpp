@@ -5,29 +5,29 @@
 ** Game renderer for client
 */
 
-#ifndef GAME_RENDERER_HPP_
-#define GAME_RENDERER_HPP_
+#ifndef GAME_RENDERER_H_
+#define GAME_RENDERER_H_
+
+#include <SFML/Graphics.hpp>
 
 #include "assetManager.hpp"
 #include "gameState.hpp"
-#include <SFML/Graphics.hpp>
 
 class GameRenderer {
-  public:
-    GameRenderer(
-        sf::RenderWindow *window, AssetManager *assetManager);
-    ~GameRenderer() = default;
+ public:
+  GameRenderer(sf::RenderWindow* window, AssetManager* asset_manager);
+  ~GameRenderer() = default;
 
-    void render(const GameState &gameState);
+  void Render(const GameState& game_state);
 
-  private:
-    sf::RenderWindow *window;
-    AssetManager *assetManager;
+ private:
+  sf::RenderWindow* window_;
+  AssetManager* asset_manager_;
 
-    void drawBackground(const GameState &gameState);
-    void drawMap(const GameState &gameState);
-    void drawPlayers(const GameState &gameState);
-    void drawUI(const GameState &gameState);
+  void DrawBackground(const GameState& game_state);
+  void DrawMap(const GameState& game_state);
+  void DrawPlayers(const GameState& game_state);
+  void DrawUI(const GameState& game_state);
 };
 
-#endif /* !GAME_RENDERER_HPP_ */
+#endif  // GAME_RENDERER_H_

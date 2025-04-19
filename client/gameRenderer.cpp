@@ -6,175 +6,162 @@
 */
 
 #include "gameRenderer.hpp"
+
 #include <iostream>
 
-GameRenderer::GameRenderer(sf::RenderWindow *win, AssetManager *am)
-    : window(win), assetManager(am)
-{}
+GameRenderer::GameRenderer(sf::RenderWindow* win, AssetManager* am)
+    : window_(win), asset_manager_(am) {}
 
-void GameRenderer::render(const GameState &gameState)
-{
-    if (!window) {
-        return;
-    }
+void GameRenderer::Render(const GameState& game_state) {
+  if (!window_) {
+    return;
+  }
 
-    std::lock_guard<std::mutex> lock(gameState.stateMutex);
+  std::lock_guard<std::mutex> lock(game_state.state_mutex_);
 
-    window->clear(sf::Color(30, 30, 30));
+  window_->clear(sf::Color(30, 30, 30));
 
-    drawBackground(gameState);
-    drawMap(gameState);
-    drawPlayers(gameState);
-    drawUI(gameState);
+  DrawBackground(game_state);
+  DrawMap(game_state);
+  DrawPlayers(game_state);
+  DrawUI(game_state);
 
-    window->display();
+  window_->display();
 }
 
-void GameRenderer::drawBackground(const GameState &gameState)
-{
-    sf::Sprite backgroundSprite = assetManager->getBackgroundSprite();
+void GameRenderer::DrawBackground(const GameState& game_state) {
+  sf::Sprite background_sprite = asset_manager_->GetBackgroundSprite();
 
-    float offset = -static_cast<float>(gameState.mapOffset);
-    float windowHeight = window->getSize().y;
-    float scale =
-        windowHeight / backgroundSprite.getLocalBounds().height;
-    backgroundSprite.setScale(scale, scale);
+  float offset = -static_cast<float>(game_state.map_offset_);
+  float window_height = window_->getSize().y;
+  float scale = window_height / background_sprite.getLocalBounds().height;
+  background_sprite.setScale(scale, scale);
 
-    for (int i = 0; i < 3; i++) {
-        backgroundSprite.setPosition(
-            offset +
-                i * backgroundSprite.getLocalBounds().width * scale,
-            0);
-        window->draw(backgroundSprite);
-    }
+  for (int i = 0; i < 3; i++) {
+    background_sprite.setPosition(
+        offset + i * background_sprite.getLocalBounds().width * scale, 0);
+    window_->draw(background_sprite);
+  }
 }
 
-void GameRenderer::drawMap(const GameState &gameState)
-{
-    if (gameState.map.empty()) {
-        return;
+void GameRenderer::DrawMap(const GameState& game_state) {
+  if (game_state.map_.empty()) {
+    return;
+  }
+  sf::Sprite coin_sprite = asset_manager_->GetCoinSprite();
+  sf::Sprite electric_sprite = asset_manager_->GetElectricSprite();
+
+  coin_sprite.setTextureRect(sf::IntRect(0, 0, 200, 200));
+  electric_sprite.setTextureRect(sf::IntRect(0, 0, 100, 100));
+
+  coin_sprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
+  electric_sprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
+
+  const float kTileSize = 55.0f;
+  const float window_width = window_->getSize().x;
+  const float window_height = window_->getSize().y;
+
+  size_t start_x = game_state.map_offset_ / kTileSize;
+  size_t end_x = start_x + static_cast<size_t>(window_width / kTileSize) + 2;
+
+  for (size_t y = 0; y < game_state.map_.size(); y++) {
+    float y_pos = y * kTileSize + 5;
+    if (y_pos < -kTileSize || y_pos > window_height) {
+      continue;
     }
-    sf::Sprite coinSprite = assetManager->getCoinSprite();
-    sf::Sprite electricSprite = assetManager->getElectricSprite();
 
-    coinSprite.setTextureRect(sf::IntRect(0, 0, 200, 200));
-    electricSprite.setTextureRect(sf::IntRect(0, 0, 100, 100));
+    const std::string& row = game_state.map_[y];
+    for (size_t x = start_x; x < end_x && x < row.length(); x++) {
+      float x_pos = x * kTileSize - game_state.map_offset_;
 
-    coinSprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
-    electricSprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
-
-    const float TILE_SIZE = 55.0f;
-    const float windowWidth = window->getSize().x;
-    const float windowHeight = window->getSize().y;
-
-    size_t startX = gameState.mapOffset / TILE_SIZE;
-    size_t endX =
-        startX + static_cast<size_t>(windowWidth / TILE_SIZE) + 2;
-
-    for (size_t y = 0; y < gameState.map.size(); y++) {
-        float yPos = y * TILE_SIZE + 5;
-        if (yPos < -TILE_SIZE || yPos > windowHeight) {
-            continue;
-        }
-
-        const std::string &row = gameState.map[y];
-        for (size_t x = startX; x < endX && x < row.length(); x++) {
-            float xPos = x * TILE_SIZE - gameState.mapOffset;
-
-            if (row[x] == 'c') {
-                coinSprite.setPosition(xPos, yPos);
-                window->draw(coinSprite);
-            } else if (row[x] == 'e') {
-                electricSprite.setPosition(xPos, yPos);
-                window->draw(electricSprite);
-            }
-        }
+      if (row[x] == 'c') {
+        coin_sprite.setPosition(x_pos, y_pos);
+        window_->draw(coin_sprite);
+      } else if (row[x] == 'e') {
+        electric_sprite.setPosition(x_pos, y_pos);
+        window_->draw(electric_sprite);
+      }
     }
+  }
 }
 
-void GameRenderer::drawPlayers(const GameState &gameState)
-{
-    const float windowWidth = window->getSize().x;
-    const float windowHeight = window->getSize().y;
-    const float TILE_SIZE = 40.0f;
+void GameRenderer::DrawPlayers(const GameState& game_state) {
+  const float window_width = window_->getSize().x;
+  const float window_height = window_->getSize().y;
+  const float kTileSize = 40.0f;
 
-    for (const auto &player : gameState.players) {
-        float xPos = player.x * TILE_SIZE - gameState.mapOffset;
-        float yPos = player.y * TILE_SIZE;
+  for (const auto& player : game_state.players_) {
+    float x_pos = player.x_ * kTileSize - game_state.map_offset_;
+    float y_pos = player.y_ * kTileSize;
 
-        if (xPos < -TILE_SIZE || xPos > windowWidth ||
-            yPos < -TILE_SIZE || yPos > windowHeight) {
-            continue;
-        }
-
-        sf::Sprite playerSprite =
-            player.flying ? assetManager->getPlayerFlyingSprite()
-                          : assetManager->getPlayerNormalSprite();
-
-        playerSprite.setTextureRect(sf::IntRect(0, 0, 130, 140));
-        playerSprite.setPosition(xPos, yPos);
-
-        sf::Text idText;
-        idText.setFont(assetManager->getFont());
-        idText.setString("P" + std::to_string(player.id));
-        idText.setCharacterSize(14);
-        idText.setFillColor(sf::Color::White);
-        idText.setPosition(xPos, yPos * (windowHeight / 10));
-
-        window->draw(playerSprite);
-        window->draw(idText);
+    if (x_pos < -kTileSize || x_pos > window_width || y_pos < -kTileSize ||
+        y_pos > window_height) {
+      continue;
     }
+
+    sf::Sprite player_sprite = player.flying_
+                                   ? asset_manager_->GetPlayerFlyingSprite()
+                                   : asset_manager_->GetPlayerNormalSprite();
+
+    player_sprite.setTextureRect(sf::IntRect(0, 0, 130, 140));
+    player_sprite.setPosition(x_pos, y_pos);
+
+    sf::Text id_text;
+    id_text.setFont(asset_manager_->GetFont());
+    id_text.setString("P" + std::to_string(player.id_));
+    id_text.setCharacterSize(14);
+    id_text.setFillColor(sf::Color::White);
+    id_text.setPosition(x_pos, y_pos * (window_height / 10));
+
+    window_->draw(player_sprite);
+    window_->draw(id_text);
+  }
 }
 
-void GameRenderer::drawUI(const GameState &gameState)
-{
-    sf::Text statusText;
-    statusText.setFont(assetManager->getFont());
-    statusText.setCharacterSize(24);
-    statusText.setFillColor(sf::Color::White);
+void GameRenderer::DrawUI(const GameState& game_state) {
+  sf::Text status_text;
+  status_text.setFont(asset_manager_->GetFont());
+  status_text.setCharacterSize(24);
+  status_text.setFillColor(sf::Color::White);
 
-    if (!gameState.gameStarted) {
-        statusText.setString("Waiting for game to start...");
-    } else if (gameState.gameEnded) {
-        if (gameState.gameResult == 0) {
-            statusText.setString("Game Over: Draw!");
-        } else {
-            statusText.setString(
-                "Game Over: Player " +
-                std::to_string(gameState.gameResult) + " wins!");
-        }
+  if (!game_state.game_started_) {
+    status_text.setString("Waiting for game to start...");
+  } else if (game_state.game_ended_) {
+    if (game_state.game_result_ == 0) {
+      status_text.setString("Game Over: Draw!");
     } else {
-        statusText.setString("Game in progress");
+      status_text.setString("Game Over: Player " +
+                            std::to_string(game_state.game_result_) + " wins!");
     }
+  } else {
+    status_text.setString("Game in progress");
+  }
 
-    statusText.setPosition(10, 10);
-    window->draw(statusText);
+  status_text.setPosition(10, 10);
+  window_->draw(status_text);
 
-    float yPos = 50.0f;
-    for (const auto &player : gameState.players) {
-        sf::Text scoreText;
-        scoreText.setFont(assetManager->getFont());
-        scoreText.setString("Player " + std::to_string(player.id) +
-                            ": " + std::to_string(player.score) +
-                            " coins");
-        scoreText.setCharacterSize(18);
-        scoreText.setFillColor(sf::Color::White);
-        scoreText.setPosition(10, yPos);
-        window->draw(scoreText);
-        yPos += 30.0f;
-    }
+  float y_pos = 50.0f;
+  for (const auto& player : game_state.players_) {
+    sf::Text score_text;
+    score_text.setFont(asset_manager_->GetFont());
+    score_text.setString("Player " + std::to_string(player.id_) + ": " +
+                         std::to_string(player.score_) + " coins");
+    score_text.setCharacterSize(18);
+    score_text.setFillColor(sf::Color::White);
+    score_text.setPosition(10, y_pos);
+    window_->draw(score_text);
+    y_pos += 30.0f;
+  }
 
-    if (gameState.gameEnded) {
-        sf::Text gameOverText;
-        gameOverText.setFont(assetManager->getFont());
-        gameOverText.setString("Press ESC to exit");
-        gameOverText.setCharacterSize(20);
-        gameOverText.setFillColor(sf::Color::White);
-        gameOverText.setPosition(
-            (window->getSize().x -
-                gameOverText.getLocalBounds().width) /
-                2,
-            window->getSize().y - 100);
-        window->draw(gameOverText);
-    }
+  if (game_state.game_ended_) {
+    sf::Text game_over_text;
+    game_over_text.setFont(asset_manager_->GetFont());
+    game_over_text.setString("Press ESC to exit");
+    game_over_text.setCharacterSize(20);
+    game_over_text.setFillColor(sf::Color::White);
+    game_over_text.setPosition(
+        (window_->getSize().x - game_over_text.getLocalBounds().width) / 2,
+        window_->getSize().y - 100);
+    window_->draw(game_over_text);
+  }
 }

@@ -6,148 +6,128 @@
 */
 
 #include "assetManager.hpp"
+
 #include <iostream>
 
-AssetManager::AssetManager()
-{}
+AssetManager::AssetManager() {}
 
-AssetManager::~AssetManager()
-{}
+AssetManager::~AssetManager() {}
 
-bool AssetManager::loadAssets()
-{
-    bool success = true;
+bool AssetManager::LoadAssets() {
+  bool success = true;
 
-    success &= loadTexture("background", "assets/background.png");
-    success &=
-        loadTexture("player_normal", "assets/player_normal.png");
-    success &=
-        loadTexture("player_flying", "assets/player_normal.png");
-    success &= loadTexture("coin", "assets/coin.png");
-    success &= loadTexture("electric", "assets/electric.png");
+  success &= LoadTexture("background", "assets/background.png");
+  success &= LoadTexture("player_normal", "assets/player_normal.png");
+  success &= LoadTexture("player_flying", "assets/player_normal.png");
+  success &= LoadTexture("coin", "assets/coin.png");
+  success &= LoadTexture("electric", "assets/electric.png");
 
-    success &= loadSound("jetpack", "assets/jetpack.ogg");
-    success &= loadSound("coin_pickup", "assets/coin_pickup_1.wav");
-    success &= loadSound("zapper", "assets/dud_zapper_pop.wav");
+  success &= LoadSound("jetpack", "assets/jetpack.ogg");
+  success &= LoadSound("coin_pickup", "assets/coin_pickup_1.wav");
+  success &= LoadSound("zapper", "assets/dud_zapper_pop.wav");
 
-    success &= loadFont("assets/font.ttf");
+  success &= LoadFont("assets/font.ttf");
 
-    return success;
+  return success;
 }
 
-bool AssetManager::loadTexture(
-    const std::string &name, const std::string &filename)
-{
-    sf::Texture texture;
-    if (!texture.loadFromFile(filename)) {
-        std::cerr << "Failed to load texture: " << filename
-                  << std::endl;
-        return false;
-    }
+bool AssetManager::LoadTexture(const std::string& name,
+                               const std::string& filename) {
+  sf::Texture texture;
+  if (!texture.loadFromFile(filename)) {
+    std::cerr << "Failed to load texture: " << filename << std::endl;
+    return false;
+  }
 
-    textures[name] = texture;
-    return true;
+  textures_[name] = texture;
+  return true;
 }
 
-bool AssetManager::loadSound(
-    const std::string &name, const std::string &filename)
-{
-    sf::SoundBuffer buffer;
-    if (!buffer.loadFromFile(filename)) {
-        std::cerr << "Failed to load sound: " << filename
-                  << std::endl;
-        return false;
-    }
+bool AssetManager::LoadSound(const std::string& name,
+                             const std::string& filename) {
+  sf::SoundBuffer buffer;
+  if (!buffer.loadFromFile(filename)) {
+    std::cerr << "Failed to load sound: " << filename << std::endl;
+    return false;
+  }
 
-    soundBuffers[name] = buffer;
-    sounds[name].setBuffer(soundBuffers[name]);
-    return true;
+  sound_buffers_[name] = buffer;
+  sounds_[name].setBuffer(sound_buffers_[name]);
+  return true;
 }
 
-bool AssetManager::loadFont(const std::string &filename)
-{
-    if (!font.loadFromFile(filename)) {
-        std::cerr << "Failed to load font: " << filename << std::endl;
-        return false;
-    }
-    return true;
+bool AssetManager::LoadFont(const std::string& filename) {
+  if (!font_.loadFromFile(filename)) {
+    std::cerr << "Failed to load font: " << filename << std::endl;
+    return false;
+  }
+  return true;
 }
 
-sf::Sprite AssetManager::getBackgroundSprite() const
-{
-    sf::Sprite sprite;
-    auto it = textures.find("background");
-    if (it != textures.end()) {
-        sprite.setTexture(it->second);
-    }
-    return sprite;
+sf::Sprite AssetManager::GetBackgroundSprite() const {
+  sf::Sprite sprite;
+  auto it = textures_.find("background");
+  if (it != textures_.end()) {
+    sprite.setTexture(it->second);
+  }
+  return sprite;
 }
 
-sf::Sprite AssetManager::getPlayerNormalSprite() const
-{
-    sf::Sprite sprite;
-    auto it = textures.find("player_normal");
-    if (it != textures.end()) {
-        sprite.setTexture(it->second);
-    }
-    return sprite;
+sf::Sprite AssetManager::GetPlayerNormalSprite() const {
+  sf::Sprite sprite;
+  auto it = textures_.find("player_normal");
+  if (it != textures_.end()) {
+    sprite.setTexture(it->second);
+  }
+  return sprite;
 }
 
-sf::Sprite AssetManager::getPlayerFlyingSprite() const
-{
-    sf::Sprite sprite;
-    auto it = textures.find("player_flying");
-    if (it != textures.end()) {
-        sprite.setTexture(it->second);
-    }
-    return sprite;
+sf::Sprite AssetManager::GetPlayerFlyingSprite() const {
+  sf::Sprite sprite;
+  auto it = textures_.find("player_flying");
+  if (it != textures_.end()) {
+    sprite.setTexture(it->second);
+  }
+  return sprite;
 }
 
-sf::Sprite AssetManager::getCoinSprite() const
-{
-    sf::Sprite sprite;
-    auto it = textures.find("coin");
-    if (it != textures.end()) {
-        sprite.setTexture(it->second);
-    }
-    return sprite;
+sf::Sprite AssetManager::GetCoinSprite() const {
+  sf::Sprite sprite;
+  auto it = textures_.find("coin");
+  if (it != textures_.end()) {
+    sprite.setTexture(it->second);
+  }
+  return sprite;
 }
 
-sf::Sprite AssetManager::getElectricSprite() const
-{
-    sf::Sprite sprite;
-    auto it = textures.find("electric");
-    if (it != textures.end()) {
-        sprite.setTexture(it->second);
-    }
-    return sprite;
+sf::Sprite AssetManager::GetElectricSprite() const {
+  sf::Sprite sprite;
+  auto it = textures_.find("electric");
+  if (it != textures_.end()) {
+    sprite.setTexture(it->second);
+  }
+  return sprite;
 }
 
-const sf::Font &AssetManager::getFont() const
-{
-    return font;
+const sf::Font& AssetManager::GetFont() const { return font_; }
+
+void AssetManager::PlayJetpackSound() {
+  auto it = sounds_.find("jetpack");
+  if (it != sounds_.end()) {
+    it->second.play();
+  }
 }
 
-void AssetManager::playJetpackSound()
-{
-    auto it = sounds.find("jetpack");
-    if (it != sounds.end()) {
-        it->second.play();
-    }
+void AssetManager::PlayCoinPickupSound() {
+  auto it = sounds_.find("coin_pickup");
+  if (it != sounds_.end()) {
+    it->second.play();
+  }
 }
 
-void AssetManager::playCoinPickupSound()
-{
-    auto it = sounds.find("coin_pickup");
-    if (it != sounds.end()) {
-        it->second.play();
-    }
-}
-
-void AssetManager::playZapperSound()
-{
-    auto it = sounds.find("zapper");
-    if (it != sounds.end()) {
-        it->second.play();
-    }
+void AssetManager::PlayZapperSound() {
+  auto it = sounds_.find("zapper");
+  if (it != sounds_.end()) {
+    it->second.play();
+  }
 }

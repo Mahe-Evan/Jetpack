@@ -6,90 +6,89 @@
 */
 
 #include "commandHandler.hpp"
+
 #include <iostream>
 
-CommandHandler::CommandHandler(NetworkManager *nmgr)
-    : networkManager(nmgr), isJetpackActive(false),
-      isLeftPressed(false), isRightPressed(false), isReadySent(false),
-      jetpackCooldown(0.0f), movementCooldown(0.0f)
-{}
+CommandHandler::CommandHandler(NetworkManager* nmgr)
+    : network_manager_(nmgr),
+      is_jetpack_active_(false),
+      is_left_pressed_(false),
+      is_right_pressed_(false),
+      is_ready_sent_(false),
+      jetpack_cooldown_(0.0f),
+      movement_cooldown_(0.0f) {}
 
-void CommandHandler::handleEvent(const sf::Event &event)
-{
-    if (!isReadySent && networkManager->isConnected() &&
-        networkManager->getClientId() >= 0) {
-        if (event.type == sf::Event::KeyPressed) {
-            networkManager->sendReady();
-            isReadySent = true;
-            return;
-        }
-    }
-
-    if (!networkManager->hasGameStarted() ||
-        networkManager->hasGameEnded()) {
-        return;
-    }
-
+void CommandHandler::HandleEvent(const sf::Event& event) {
+  if (!is_ready_sent_ && network_manager_->IsConnected() &&
+      network_manager_->GetClientId() >= 0) {
     if (event.type == sf::Event::KeyPressed) {
-        switch (event.key.code) {
-            case sf::Keyboard::Space:
-                if (!isJetpackActive) {
-                    isJetpackActive = true;
-                    networkManager->sendFly(true);
-                }
-                break;
-            case sf::Keyboard::Left:
-                isLeftPressed = true;
-                break;
-            case sf::Keyboard::Right:
-                isRightPressed = true;
-                break;
-            default:
-                break;
-        }
+      network_manager_->SendReady();
+      is_ready_sent_ = true;
+      return;
     }
+  }
 
-    else if (event.type == sf::Event::KeyReleased) {
-        switch (event.key.code) {
-            case sf::Keyboard::Space:
-                isJetpackActive = false;
-                networkManager->sendFly(false);
-                break;
-            case sf::Keyboard::Left:
-                isLeftPressed = false;
-                break;
-            case sf::Keyboard::Right:
-                isRightPressed = false;
-                break;
-            case sf::Keyboard::R:
-                if (!networkManager->hasGameStarted()) {
-                    networkManager->sendReady();
-                    isReadySent = true;
-                }
-                break;
-            default:
-                break;
+  if (!network_manager_->HasGameStarted() || network_manager_->HasGameEnded()) {
+    return;
+  }
+
+  if (event.type == sf::Event::KeyPressed) {
+    switch (event.key.code) {
+      case sf::Keyboard::Space:
+        if (!is_jetpack_active_) {
+          is_jetpack_active_ = true;
+          network_manager_->SendFly(true);
         }
+        break;
+      case sf::Keyboard::Left:
+        is_left_pressed_ = true;
+        break;
+      case sf::Keyboard::Right:
+        is_right_pressed_ = true;
+        break;
+      default:
+        break;
     }
+  }
+
+  else if (event.type == sf::Event::KeyReleased) {
+    switch (event.key.code) {
+      case sf::Keyboard::Space:
+        is_jetpack_active_ = false;
+        network_manager_->SendFly(false);
+        break;
+      case sf::Keyboard::Left:
+        is_left_pressed_ = false;
+        break;
+      case sf::Keyboard::Right:
+        is_right_pressed_ = false;
+        break;
+      case sf::Keyboard::R:
+        if (!network_manager_->HasGameStarted()) {
+          network_manager_->SendReady();
+          is_ready_sent_ = true;
+        }
+        break;
+      default:
+        break;
+    }
+  }
 }
 
-void CommandHandler::updateInput(float deltaTime)
-{
-    if (!networkManager->hasGameStarted() ||
-        networkManager->hasGameEnded()) {
-        return;
-    }
+void CommandHandler::UpdateInput(float delta_time) {
+  if (!network_manager_->HasGameStarted() || network_manager_->HasGameEnded()) {
+    return;
+  }
 
-    jetpackCooldown -= deltaTime;
-    movementCooldown -= deltaTime;
+  jetpack_cooldown_ -= delta_time;
+  movement_cooldown_ -= delta_time;
 
-    if (isJetpackActive && jetpackCooldown <= 0.0f) {
-        networkManager->sendFly(true);
-        jetpackCooldown = JETPACK_COMMAND_INTERVAL;
-    }
+  if (is_jetpack_active_ && jetpack_cooldown_ <= 0.0f) {
+    network_manager_->SendFly(true);
+    jetpack_cooldown_ = kJetpackCommandInterval;
+  }
 
-    if ((isLeftPressed || isRightPressed) &&
-        movementCooldown <= 0.0f) {
-        movementCooldown = MOVEMENT_COMMAND_INTERVAL;
-    }
+  if ((is_left_pressed_ || is_right_pressed_) && movement_cooldown_ <= 0.0f) {
+    movement_cooldown_ = kMovementCommandInterval;
+  }
 }

@@ -5,116 +5,97 @@
 ** Network manager for client
 */
 
-#ifndef NETWORK_MANAGER_HPP_
-#define NETWORK_MANAGER_HPP_
+#ifndef NETWORK_MANAGER_H_
+#define NETWORK_MANAGER_H_
 
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 #include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <map>
 #include <mutex>
-#include <netinet/in.h>
-#include <poll.h>
 #include <queue>
 #include <string>
-#include <sys/socket.h>
 #include <thread>
-#include <unistd.h>
 #include <vector>
 
-enum JetpackCommand {
-    ID,
-    MAP,
-    READY,
-    START,
-    PLAYER,
-    FLY,
-    COIN,
-    END
+// Enum names are CamelCase in Google style, but enum values use kConstantStyle
+enum JetpackCommand { kId, kMap, kReady, kStart, kPlayer, kFly, kCoin, kEnd };
+
+// Nested structures moved outside the class for better organization
+struct PlayerPosition {
+  int player_id;
+  float x;
+  float y;
+  int score;
+  bool flying;
+};
+
+struct Coin {
+  int x;
+  int y;
 };
 
 class NetworkManager {
-  public:
-    NetworkManager();
-    ~NetworkManager();
+ public:
+  NetworkManager();
+  ~NetworkManager();
 
-    bool connect(const std::string &host, int port);
+  bool Connect(const std::string& host, int port);
+  void Disconnect();
+  bool SendReady();
+  bool SendFly(bool activate);
 
-    void disconnect();
+  std::vector<std::string> GetMap();
+  std::vector<PlayerPosition> GetPlayerPositions();
+  std::vector<Coin> GetCoins();
 
-    bool sendReady();
+  bool IsConnected() const;
+  bool HasGameStarted() const;
+  bool HasGameEnded() const;
+  int GetGameResult() const;
+  int GetClientId() const;
 
-    bool sendFly(bool activate);
+  void SetDebugMode(bool enable);
 
-    std::vector<std::string> getMap();
+ private:
+  void NetworkThread();
+  void ProcessData(const std::string& data);
+  bool SendCommand(const std::string& command);
+  void DebugPrint(const std::string& direction, const std::string& message);
 
-    struct PlayerPosition {
-        int playerId;
-        float x;
-        float y;
-        int score;
-        bool flying;
-    };
+  int socket_fd_;
+  std::thread network_thread_handle_;
+  std::atomic<bool> running_;
+  std::atomic<bool> connected_;
+  std::atomic<bool> game_started_;
+  std::atomic<bool> game_ended_;
+  std::atomic<int> client_id_;
+  std::atomic<int> game_result_;
+  std::atomic<bool> debug_mode_;
 
-    std::vector<PlayerPosition> getPlayerPositions();
+  std::mutex data_mutex_;
+  std::vector<std::string> map_data_;
+  std::vector<PlayerPosition> player_positions_;
+  std::vector<Coin> coins_;
 
-    struct Coin {
-        int x;
-        int y;
-    };
+  std::mutex command_mutex_;
+  std::queue<std::string> command_queue_;
+  std::condition_variable command_cv_;
 
-    std::vector<Coin> getCoins();
+  std::map<std::string, std::function<void(const std::string&)>>
+      response_handlers_;
 
-    bool isConnected() const;
+  struct pollfd poll_fd_;
 
-    bool hasGameStarted() const;
-
-    bool hasGameEnded() const;
-
-    int getGameResult() const;
-
-    int getClientId() const;
-
-    void setDebugMode(bool enable);
-
-  private:
-    void networkThread();
-
-    void processData(const std::string &data);
-
-    bool sendCommand(const std::string &command);
-
-    void debugPrint(
-        const std::string &direction, const std::string &message);
-
-    int socketFd;
-    std::thread networkThreadHandle;
-    std::atomic<bool> running;
-    std::atomic<bool> connected;
-    std::atomic<bool> gameStarted;
-    std::atomic<bool> gameEnded;
-    std::atomic<int> clientId;
-    std::atomic<int> gameResult;
-    std::atomic<bool> debugMode;
-
-    std::mutex dataMutex;
-    std::vector<std::string> mapData;
-    std::vector<PlayerPosition> playerPositions;
-    std::vector<Coin> coins;
-
-    std::mutex commandMutex;
-    std::queue<std::string> commandQueue;
-    std::condition_variable commandCV;
-
-    std::map<std::string, std::function<void(const std::string &)>>
-        responseHandlers;
-
-    struct pollfd pollFd;
-
-    static constexpr size_t BUFFER_SIZE = 4096;
-    char buffer[BUFFER_SIZE];
-    std::string partialMessage;
+  static constexpr size_t kBufferSize = 4096;
+  char buffer_[kBufferSize];
+  std::string partial_message_;
 };
 
-#endif /* !NETWORK_MANAGER_HPP_ */
+#endif  // NETWORK_MANAGER_H_

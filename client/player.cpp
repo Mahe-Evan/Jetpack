@@ -7,5 +7,4 @@
 
 #include "player.hpp"
 
-Player::Player() : id(0), x(0.0f), y(0.0f), score(0), flying(false)
-{}
+Player::Player() : id_(0), x_(0.0f), y_(0.0f), score_(0), flying_(false) {}

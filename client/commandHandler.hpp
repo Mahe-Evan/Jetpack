@@ -5,34 +5,34 @@
 ** Command handler for client input
 */
 
-#ifndef COMMAND_HANDLER_HPP_
-#define COMMAND_HANDLER_HPP_
+#ifndef COMMAND_HANDLER_H_
+#define COMMAND_HANDLER_H_
 
-#include "networkManager.hpp"
 #include <SFML/Graphics.hpp>
 
+#include "networkManager.hpp"
+
 class CommandHandler {
-  public:
-    CommandHandler(NetworkManager *networkManager);
-    ~CommandHandler() = default;
+ public:
+  CommandHandler(NetworkManager* network_manager);
+  ~CommandHandler() = default;
 
-    void handleEvent(const sf::Event &event);
+  void HandleEvent(const sf::Event& event);
+  void UpdateInput(float delta_time);
 
-    void updateInput(float deltaTime);
+ private:
+  NetworkManager* network_manager_;
 
-  private:
-    NetworkManager *networkManager;
+  bool is_jetpack_active_;
+  bool is_left_pressed_;
+  bool is_right_pressed_;
+  bool is_ready_sent_;
 
-    bool isJetpackActive;
-    bool isLeftPressed;
-    bool isRightPressed;
-    bool isReadySent;
+  float jetpack_cooldown_;
+  float movement_cooldown_;
 
-    float jetpackCooldown;
-    float movementCooldown;
-
-    static constexpr float JETPACK_COMMAND_INTERVAL = 0.1f;
-    static constexpr float MOVEMENT_COMMAND_INTERVAL = 0.1f;
+  static constexpr float kJetpackCommandInterval = 0.1f;
+  static constexpr float kMovementCommandInterval = 0.1f;
 };
 
-#endif /* !COMMAND_HANDLER_HPP_ */
+#endif  // COMMAND_HANDLER_H_

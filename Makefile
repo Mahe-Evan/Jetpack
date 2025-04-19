@@ -68,10 +68,10 @@ UNIT_FLAGS	=	$(FLAGS) -lcriterion --coverage
 all:	$(SERVER_NAME) $(CLIENT_NAME)
 
 $(SERVER_NAME): $(SERVER_OBJ)
-	$(CC) -o $(SERVER_NAME) $(SERVER_OBJ) $(FLAGS)
+	- $(CC) -o $(SERVER_NAME) $(SERVER_OBJ) $(FLAGS)
 
 $(CLIENT_NAME): $(CLIENT_OBJ)
-	$(CXX) -o $(CLIENT_NAME) $(CLIENT_OBJ) $(CXXFLAGS) $(SFML_LIBS)
+	- $(CXX) -o $(CLIENT_NAME) $(CLIENT_OBJ) $(CXXFLAGS) $(SFML_LIBS)
 
 server: $(SERVER_NAME)
 
@@ -79,10 +79,10 @@ client: $(CLIENT_NAME)
 
 -include $(DEP)
 %.o: %.c
-	$(CC) -c $< -o $@ -MMD -MF $*.d -MT $@ $(CFLAGS)
+	- $(CC) -c $< -o $@ -MMD -MF $*.d -MT $@ $(CFLAGS)
 
 %.o: %.cpp
-	$(CXX) -c $< -o $@ -MMD -MF $*.d -MT $@ $(CXXFLAGS)
+	- $(CXX) -c $< -o $@ -MMD -MF $*.d -MT $@ $(CXXFLAGS)
 
 setup:
 	@mkdir -p ./client
@@ -112,7 +112,7 @@ fclean:	libclean
 re:	fclean all
 
 tests_run: fclean
-	$(CC) -o $(TESTS_NAME) $(SRC) $(TESTS_SRC) $(UNIT_FLAGS)
+	- $(CC) -o $(TESTS_NAME) $(SRC) $(TESTS_SRC) $(UNIT_FLAGS)
 	-./$(TESTS_NAME) --verbose
 	gcovr --exclude tests/
 	gcovr --exclude tests/ --branches

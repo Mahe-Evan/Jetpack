@@ -8,44 +8,43 @@
 #include "gameState.hpp"
 
 GameState::GameState()
-    : gameStarted(false), gameEnded(false), gameResult(0),
-      mapOffset(0.0f)
-{}
+    : game_started_(false),
+      game_ended_(false),
+      game_result_(0),
+      map_offset_(0.0f) {}
 
-void GameState::updateFromNetwork(
-    const std::vector<std::string> &newMap,
-    const std::vector<NetworkManager::PlayerPosition>
-        &playerPositions,
-    bool started, bool ended, int result)
-{
-    std::lock_guard<std::mutex> lock(stateMutex);
+void GameState::UpdateFromNetwork(
+    const std::vector<std::string>& new_map,
+    const std::vector<PlayerPosition>& player_positions, bool started,
+    bool ended, int result) {
+  std::lock_guard<std::mutex> lock(state_mutex_);
 
-    if (!newMap.empty()) {
-        map = newMap;
+  if (!new_map.empty()) {
+    map_ = new_map;
+  }
+
+  players_.clear();
+  for (const auto& pos : player_positions) {
+    Player player;
+    player.id_ = pos.player_id;
+    player.x_ = pos.x;
+    player.y_ = pos.y;
+    player.score_ = pos.score;
+    player.flying_ = pos.flying;
+    players_.push_back(player);
+  }
+
+  game_started_ = started;
+  game_ended_ = ended;
+  game_result_ = result;
+
+  if (game_started_ && !game_ended_ && !players_.empty()) {
+    for (const auto& player : players_) {
+      if (player.id_ == 1) {
+        float target_offset = player.x_ * 40.0f - 400.0f;
+        map_offset_ = target_offset > 0 ? target_offset : 0;
+        break;
+      }
     }
-
-    players.clear();
-    for (const auto &pos : playerPositions) {
-        Player player;
-        player.id = pos.playerId;
-        player.x = pos.x;
-        player.y = pos.y;
-        player.score = pos.score;
-        player.flying = pos.flying;
-        players.push_back(player);
-    }
-
-    gameStarted = started;
-    gameEnded = ended;
-    gameResult = result;
-
-    if (gameStarted && !gameEnded && !players.empty()) {
-        for (const auto &player : players) {
-            if (player.id == 1) {
-                float targetOffset = player.x * 40.0f - 400.0f;
-                mapOffset = targetOffset > 0 ? targetOffset : 0;
-                break;
-            }
-        }
-    }
+  }
 }

@@ -5,8 +5,8 @@
 ** Asset manager for client
 */
 
-#ifndef ASSET_MANAGER_HPP_
-#define ASSET_MANAGER_HPP_
+#ifndef ASSET_MANAGER_H_
+#define ASSET_MANAGER_H_
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
@@ -14,34 +14,32 @@
 #include <string>
 
 class AssetManager {
-  public:
-    AssetManager();
-    ~AssetManager();
+ public:
+  AssetManager();
+  ~AssetManager();
 
-    bool loadAssets();
+  bool LoadAssets();
 
-    sf::Sprite getBackgroundSprite() const;
-    sf::Sprite getPlayerNormalSprite() const;
-    sf::Sprite getPlayerFlyingSprite() const;
-    sf::Sprite getCoinSprite() const;
-    sf::Sprite getElectricSprite() const;
-    const sf::Font &getFont() const;
+  sf::Sprite GetBackgroundSprite() const;
+  sf::Sprite GetPlayerNormalSprite() const;
+  sf::Sprite GetPlayerFlyingSprite() const;
+  sf::Sprite GetCoinSprite() const;
+  sf::Sprite GetElectricSprite() const;
+  const sf::Font& GetFont() const;
 
-    void playJetpackSound();
-    void playCoinPickupSound();
-    void playZapperSound();
+  void PlayJetpackSound();
+  void PlayCoinPickupSound();
+  void PlayZapperSound();
 
-  private:
-    std::map<std::string, sf::Texture> textures;
-    std::map<std::string, sf::SoundBuffer> soundBuffers;
-    std::map<std::string, sf::Sound> sounds;
-    sf::Font font;
+ private:
+  std::map<std::string, sf::Texture> textures_;
+  std::map<std::string, sf::SoundBuffer> sound_buffers_;
+  std::map<std::string, sf::Sound> sounds_;
+  sf::Font font_;
 
-    bool loadTexture(
-        const std::string &name, const std::string &filename);
-    bool loadSound(
-        const std::string &name, const std::string &filename);
-    bool loadFont(const std::string &filename);
+  bool LoadTexture(const std::string& name, const std::string& filename);
+  bool LoadSound(const std::string& name, const std::string& filename);
+  bool LoadFont(const std::string& filename);
 };
 
-#endif /* !ASSET_MANAGER_HPP_ */
+#endif  // ASSET_MANAGER_H_
