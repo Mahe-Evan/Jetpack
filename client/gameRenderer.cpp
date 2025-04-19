@@ -60,10 +60,9 @@ void GameRenderer::DrawMap(const GameState& game_state) {
   size_t start_x = game_state.map_offset_ / kTileSize;
   size_t end_x = start_x + static_cast<size_t>(window_width / kTileSize) + 2;
 
-  bool debug_mode = true;
-
   for (size_t y = 0; y < game_state.map_.size(); y++) {
-    float y_pos = y * kTileSize;
+    float y_pos = y * kTileSize + 80.f;
+
     if (y_pos < -kTileSize || y_pos > window_height) {
       continue;
     }
@@ -77,29 +76,11 @@ void GameRenderer::DrawMap(const GameState& game_state) {
             x_pos + (kTileSize - coin_sprite.getGlobalBounds().width) / 2,
             y_pos + (kTileSize - coin_sprite.getGlobalBounds().height) / 2);
         window_.draw(coin_sprite);
-
-        if (debug_mode) {
-          sf::RectangleShape hitbox(sf::Vector2f(kTileSize, kTileSize));
-          hitbox.setPosition(x_pos, y_pos);
-          hitbox.setFillColor(sf::Color::Transparent);
-          hitbox.setOutlineColor(sf::Color::Red);
-          hitbox.setOutlineThickness(1.0f);
-          window_.draw(hitbox);
-        }
       } else if (row[x] == 'e') {
         electric_sprite.setPosition(
             x_pos + (kTileSize - electric_sprite.getGlobalBounds().width) / 2,
             y_pos + (kTileSize - electric_sprite.getGlobalBounds().height) / 2);
         window_.draw(electric_sprite);
-
-        if (debug_mode) {
-          sf::RectangleShape hitbox(sf::Vector2f(kTileSize, kTileSize));
-          hitbox.setPosition(x_pos, y_pos);
-          hitbox.setFillColor(sf::Color::Transparent);
-          hitbox.setOutlineColor(sf::Color::Red);
-          hitbox.setOutlineThickness(1.0f);
-          window_.draw(hitbox);
-        }
       }
     }
   }
@@ -110,11 +91,11 @@ void GameRenderer::DrawPlayers(const GameState& game_state) {
   const float window_height = window_.getSize().y;
   const float kTileSize = 40.0f;
 
-  bool debug_mode = true;
-
   for (const auto& player : game_state.players_) {
     float x_pos = player.x_ * kTileSize - game_state.map_offset_;
-    float y_pos = player.y_ * kTileSize;
+
+    float scaled_y = player.y_ * 0.9f;
+    float y_pos = scaled_y * kTileSize + 80.f;
 
     if (x_pos < -kTileSize || x_pos > window_width || y_pos < -kTileSize ||
         y_pos > window_height) {
@@ -141,15 +122,6 @@ void GameRenderer::DrawPlayers(const GameState& game_state) {
 
     window_.draw(player_sprite);
     window_.draw(id_text);
-
-    if (debug_mode) {
-      sf::RectangleShape hitbox(sf::Vector2f(kTileSize, kTileSize));
-      hitbox.setPosition(x_pos, y_pos);
-      hitbox.setFillColor(sf::Color::Transparent);
-      hitbox.setOutlineColor(sf::Color::Green);
-      hitbox.setOutlineThickness(1.0f);
-      window_.draw(hitbox);
-    }
   }
 }
 
@@ -186,6 +158,20 @@ void GameRenderer::DrawUI(const GameState& game_state) {
     score_text.setFillColor(sf::Color::White);
     score_text.setPosition(10, y_pos);
     window_.draw(score_text);
+
+    // Show player coordinates and the scaled value used for rendering
+    sf::Text pos_text;
+    pos_text.setFont(asset_manager_.GetFont());
+    char pos_str[50];
+    float scaled_y = player.y_ * 0.9f;
+    snprintf(pos_str, sizeof(pos_str), "Pos: (%.1f, %.1f) → Scaled Y: %.1f",
+             player.x_, player.y_, scaled_y);
+    pos_text.setString(pos_str);
+    pos_text.setCharacterSize(14);
+    pos_text.setFillColor(sf::Color::Yellow);
+    pos_text.setPosition(200, y_pos + 2);
+    window_.draw(pos_text);
+
     y_pos += 30.0f;
   }
 
