@@ -20,16 +20,19 @@ void receive_command(server_t *restrict server,
 
     if (sscanf(player->command, "FLY %c", &is_flying) == 1) {
         player->is_flying = is_flying - '0';
-        printf("FLY %c FROM %d\n", is_flying, client_index);
+        if (server->debug_mode)
+            printf("FLY %c FROM %d\n", is_flying, client_index);
         write(server->fds[client_index + 2].fd, "OK\r\n", 4);
-    } else if (!ready && strcmp(player->command, "READY") == 0) {
-        server->game.ready_player[client_index] = true;
-        printf("READY FROM %d\n", client_index + 1);
-        write(server->fds[client_index + 2].fd, "OK\r\n", 4);
-    } else {
-        write(server->fds[client_index + 2].fd,
-            "ERROR Unknown command\r\n", 22);
+        return;
     }
-    printf("Command received: %s\n", player->command);
+    if (!ready && strcmp(player->command, "READY") == 0) {
+        server->game.ready_player[client_index] = true;
+        if (server->debug_mode)
+            printf("READY FROM %d\n", client_index);
+        write(server->fds[client_index + 2].fd, "OK\r\n", 4);
+        return;
+    }
+    if (server->debug_mode)
+        printf("[SERVER]: %s\n", player->command);
     return;
 }

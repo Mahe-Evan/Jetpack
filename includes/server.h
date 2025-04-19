@@ -48,7 +48,9 @@ typedef struct server_s {
     bool debug_mode;
     struct pollfd fds[MAX_CLIENTS + 2];
     game_t game;
+    bool is_finished;
     int winner;
+    bool ready;
     bool is_alive[MAX_CLIENTS];
     player_t player[MAX_CLIENTS];
 } server_t;

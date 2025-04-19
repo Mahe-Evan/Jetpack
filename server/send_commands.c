@@ -12,7 +12,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-static void send_coins(coin_t *collected_coins, int client_fd)
+static void send_coins(coin_t *collected_coins, int client_fd,
+    server_t *restrict server)
 {
     int coin_msg_len = 0;
     char *coin_msg = NULL;
@@ -25,27 +26,34 @@ static void send_coins(coin_t *collected_coins, int client_fd)
         snprintf(coin_msg, coin_msg_len + 1, "COIN %lu %d %d\r\n",
             collected_coins->player_id, (int)collected_coins->pos.x,
             (int)collected_coins->pos.y);
+        if (server->debug_mode) {
+            printf("COIN %lu %d %d\n", collected_coins->player_id,
+                (int)collected_coins->pos.x, (int)collected_coins->pos.y);
+        }
         write(client_fd, coin_msg, coin_msg_len);
-        puts(coin_msg);
         free(coin_msg);
     }
     return;
 }
 
-static void send_player(unsigned long player_id,
-    position_t *restrict player_position, client_t *restrict player,
-    int player_fd)
+static void send_player(
+    unsigned long player_id,
+    client_t *restrict player,
+    int player_fd,
+    server_t *restrict server)
 {
     int msg_len = snprintf(NULL, 0, "PLAYER %lu %f %f %u %c\r\n",
-        player_id, player_position->x, player_position->y,
+        player_id, player->pos.x, player->pos.y,
         player->nb_coins, player->is_flying + '0');
     char *msg = malloc(msg_len + 1);
 
     snprintf(msg, msg_len + 1, "PLAYER %lu %f %f %u %c\r\n",
-        player_id, player_position->x, player_position->y,
+        player_id, player->pos.x, player->pos.y,
         player->nb_coins, player->is_flying + '0');
     write(player_fd, msg, msg_len);
-    puts(msg);
+    if (server->debug_mode) {
+        write(STDOUT_FILENO, msg, msg_len);
+    }
     free(msg);
     return;
 }
@@ -59,7 +67,9 @@ static void send_winner(server_t *restrict server)
     for (int i = 2; server->fds[i].fd != -1 && i < MAX_CLIENTS + 2; i++) {
         write(server->fds[i].fd, msg, msg_len);
     }
-    puts(msg);
+    if (server->debug_mode) {
+        write(STDOUT_FILENO, msg, msg_len);
+    }
     free(msg);
     return;
 }
@@ -72,12 +82,10 @@ void send_command(server_t *restrict server, int index, bool game_finished)
             return send_winner(server);
         }
         if (server->game.ready_player[i]) {
-            send_player(i + 1, &server->player[i].pos,
-                &server->player[i], server->fds[index].fd);
+            send_player(i + 1, &server->player[i],
+                server->fds[index].fd, server);
         }
     }
-    send_coins(server->game.collected_coins, server->fds[index].fd);
+    send_coins(server->game.collected_coins, server->fds[index].fd, server);
     return;
 }
-
-// END id_winner
