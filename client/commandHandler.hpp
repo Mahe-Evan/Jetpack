@@ -14,14 +14,14 @@
 
 class CommandHandler {
  public:
-  CommandHandler(NetworkManager* network_manager);
+  CommandHandler(NetworkManager& network_manager);
   ~CommandHandler() = default;
 
   void HandleEvent(const sf::Event& event);
   void UpdateInput(float delta_time);
 
  private:
-  NetworkManager* network_manager_;
+  NetworkManager& network_manager_;
 
   bool is_jetpack_active_;
   bool is_left_pressed_;

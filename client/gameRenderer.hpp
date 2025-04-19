@@ -15,14 +15,14 @@
 
 class GameRenderer {
  public:
-  GameRenderer(sf::RenderWindow* window, AssetManager* asset_manager);
+  GameRenderer(sf::RenderWindow& window, AssetManager& asset_manager);
   ~GameRenderer() = default;
 
   void Render(const GameState& game_state);
 
  private:
-  sf::RenderWindow* window_;
-  AssetManager* asset_manager_;
+  sf::RenderWindow& window_;
+  AssetManager& asset_manager_;
 
   void DrawBackground(const GameState& game_state);
   void DrawMap(const GameState& game_state);
