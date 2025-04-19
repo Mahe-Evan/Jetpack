@@ -114,8 +114,8 @@ bool should_process_frame(void)
 bool handle_existing_clients(server_t *restrict server, bool ready)
 {
     bool game_finished = check_end_game(server);
-    server->is_finished = game_finished;
 
+    server->is_finished = game_finished;
     handle_game_logic(server, ready);
     for (int i = 2; server->fds[i].fd != -1 && i < MAX_CLIENTS + 2;
         i++) {
