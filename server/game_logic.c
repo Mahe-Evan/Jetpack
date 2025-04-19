@@ -6,6 +6,7 @@
 */
 
 #include "server.h"
+#include <stdbool.h>
 #include <stdio.h>
 
 static void check_electricity_collision(
@@ -16,7 +17,6 @@ static void check_electricity_collision(
         server->is_alive[player_index] = false;
         server->player[player_index].pos.x = -1;
         server->player[player_index].pos.y = -1;
-        server->player[player_index].is_flying = false;
     }
 }
 
