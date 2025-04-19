@@ -24,8 +24,8 @@ test_main.cpp
 test
 architecture.txt
 push_script.sh
-nanotekspice
-test_nanotekspice
+jetpack_client
+jetpack_server
 coverage
 log.bin
 bun.lock

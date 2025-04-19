@@ -196,6 +196,10 @@ int main(int argc, char* argv[]) {
   sf::RenderWindow window(sf::VideoMode(800, 600), "Jetpack Client");
   window.setFramerateLimit(60);
 
+  sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
+  window.setPosition(sf::Vector2i((desktopMode.width - 800) / 2,
+                                  (desktopMode.height - 600) / 2));
+
   RunGameLoop(network_manager, game_state, asset_manager, window);
 
   network_manager.Disconnect();
