@@ -97,31 +97,31 @@ static void send_start(
 static void handle_server_loop_iteration(server_t *restrict server,
     bool *is_enough_player_ready, bool *restrict is_running)
 {
-    int poll_res = poll(server->fds, MAX_CLIENTS + 2, 1000);
+    int poll_res = poll(server->fds, MAX_CLIENTS + 2, 0);
 
     if (poll_res == -1) {
         perror("poll");
-        return false;
+        return;
     }
     if (!*is_enough_player_ready) {
         *is_running = handle_new_connection(server->fds, server->game.map);
         send_start(is_enough_player_ready, server->game.ready_player,
-                  server->fds, server->is_alive);
+            server->fds, server->is_alive);
     }
-    if (!handle_existing_clients(server, *is_enough_player_ready))
-        return false;
-    return is_running ? handle_signal(&server->fds[0]) : is_running;
+    handle_existing_clients(server, *is_enough_player_ready);
+    *is_running = *is_running ? handle_signal(&server->fds[0]) : false;
+    return;
 }
 
 int loop(server_t *restrict server)
 {
     bool is_running = true;
-    int poll_res = 0;
     bool is_enough_player_ready = false;
 
     while (is_running) {
         handle_server_loop_iteration(server, &is_enough_player_ready,
             &is_running);
+        usleep(1000000 / 90);
     }
     return errno ? EXIT_FAILURE : EXIT_SUCCESS;
 }
