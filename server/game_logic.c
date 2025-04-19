@@ -7,22 +7,41 @@
 
 #include "server.h"
 #include <stdio.h>
-#include <time.h>
-#include <unistd.h>
 
 static void check_electricity_collision(
     server_t *restrict server, int player_index)
 {
-    for (int i = 0; server->game.map[i] != NULL; i++) {
-        for (int j = 0; server->game.map[i][j] != '\0'; j++) {
-            if (server->game.map[i][j] == 'E' &&
-                server->player[player_index].pos.x == j &&
-                server->player[player_index].pos.y == i) {
-                server->player[player_index].is_flying = true;
-                return;
-            }
-        }
+    if (server->game.map[(int)server->player[player_index].pos.y]
+        [(int)server->player[player_index].pos.x] == 'e') {
+        server->is_alive[player_index] = false;
+        server->player[player_index].pos.x = -1;
+        server->player[player_index].pos.y = -1;
+        server->player[player_index].is_flying = false;
     }
+}
+
+static bool check_coin_collision(
+    server_t *restrict server, int player_index, int coin_index)
+{
+    float p_x = server->player[player_index].pos.x;
+    float p_y = server->player[player_index].pos.y;
+    float coin_x = server->game.coins_pos[coin_index].x;
+    float coin_y = server->game.coins_pos[coin_index].y;
+    bool x_matches = (int)p_x == (int)coin_x;
+    bool y_matches = (int)p_y == (int)coin_y;
+    bool x_r_matches = (p_x - (int)p_x > 0.5) && ((int)p_x + 1 == (int)coin_x);
+    bool y_r_matches = (p_y - (int)p_y > 0.5) && ((int)p_y + 1 == (int)coin_y);
+
+    if ((x_matches || x_r_matches) && (y_matches || y_r_matches) &&
+        !server->game.coins_collected[coin_index].players[player_index]) {
+        server->game.coins_collected[coin_index] .players[player_index] = true;
+        server->game.coins_collected[coin_index].pos.x =
+            server->game.coins_pos[coin_index].x;
+        server->game.coins_collected[coin_index].pos.y =
+            server->game.coins_pos[coin_index].y;
+        return true;
+    }
+    return false;
 }
 
 static void check_player_collision(
@@ -31,55 +50,14 @@ static void check_player_collision(
     if (server->game.coins_pos == NULL)
         return;
     for (int i = 0; server->game.coins_pos[i].x != -1.; i++) {
-        printf("Player %d: pos (%f, %f)\n", player_index,
-            server->player[player_index].pos.x,
-            server->player[player_index].pos.y);
-        printf("Coin %d: pos (%f, %f)\n", i,
-            server->game.coins_pos[i].x, server->game.coins_pos[i].y);
-        if (server->player[player_index].pos.x ==
-                server->game.coins_pos[i].x &&
-            server->player[player_index].pos.y ==
-                server->game.coins_pos[i].y &&
-            server->game.coins_collected[i].players[player_index] ==
-                false) {
+        if (check_coin_collision(server, player_index, i))
             server->player[player_index].nb_coins++;
-            server->game.coins_collected[i].players[player_index] =
-                true;
-            server->game.coins_collected[i].pos.x =
-                server->game.coins_pos[i].x;
-            server->game.coins_collected[i].pos.y =
-                server->game.coins_pos[i].y;
-            server->player[player_index].is_flying = false;
-            break;
-        }
     }
-}
-
-static bool should_process_frame(void)
-{
-    static struct timespec last_time = {0, 0};
-    struct timespec current_time;
-    double elapsed_ms;
-    const double frame_time_ms = 16.67;
-
-    clock_gettime(CLOCK_MONOTONIC, &current_time);
-    if (last_time.tv_sec == 0 && last_time.tv_nsec == 0) {
-        last_time = current_time;
-        return false;
-    }
-    elapsed_ms =
-        (current_time.tv_sec - last_time.tv_sec) * 1000.0 +
-        (current_time.tv_nsec - last_time.tv_nsec) / 1000000.0;
-    if (elapsed_ms < frame_time_ms) {
-        return false;
-    }
-    last_time = current_time;
-    return true;
 }
 
 void handle_game_logic(server_t *restrict server, bool ready)
 {
-    if (!ready) {
+    if (!ready || server->is_finished) {
         return;
     }
     for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -94,8 +72,8 @@ void handle_game_logic(server_t *restrict server, bool ready)
         if (server->player[i].pos.y > 10) {
             server->player[i].pos.y = 10;
         }
-        server->player[i].pos.x += 0.1;
-        //   check_electricity_collision(server, i);
+        server->player[i].pos.x += 0.05;
+        check_electricity_collision(server, i);
         check_player_collision(server, i);
     }
 }
