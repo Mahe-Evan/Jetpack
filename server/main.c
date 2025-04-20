@@ -5,11 +5,11 @@
 ** epitech ftp
 */
 
-#include "jetpack.h"
-#include "server.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "jetpack.h"
+#include "server.h"
 
 int main(int ac[[gnu::unused]], char *av[])
 {

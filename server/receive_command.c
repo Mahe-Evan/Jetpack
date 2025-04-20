@@ -5,13 +5,13 @@
 ** check and call the commands
 */
 
-#include "jetpack.h"
-#include "server.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
+#include "jetpack.h"
+#include "server.h"
 
 void receive_command(server_t *restrict server,
     player_t *restrict player, int client_index, bool ready)

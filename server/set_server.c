@@ -5,8 +5,6 @@
 ** set the serveur
 */
 
-#include "jetpack.h"
-#include "server.h"
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -14,6 +12,8 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include "jetpack.h"
+#include "server.h"
 
 static void set_poll_fds(server_t *restrict server)
 {

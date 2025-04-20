@@ -5,8 +5,6 @@
 ** main loop
 */
 
-#include "jetpack.h"
-#include "server.h"
 #include <errno.h>
 #include <netinet/in.h>
 #include <stdbool.h>
@@ -16,6 +14,8 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include "jetpack.h"
+#include "server.h"
 
 static void set_player(int player_fd, char *map[static MAP_LEN])
 {

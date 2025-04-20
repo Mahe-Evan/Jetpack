@@ -113,8 +113,10 @@ static int process_arg(char *argv[], int i, parsed_t *restrict parsed)
         return i + 2;
     }
     if (strcmp(argv[i], "-m") == 0 && argv[i + 1]) {
-        if (!read_map_file(argv[i + 1], parsed->map))
+        if (!read_map_file(argv[i + 1], parsed->map)) {
+            perror("read map");
             return -1;
+        }
         return i + 2;
     }
     if (strcmp(argv[i], "-d") == 0) {
@@ -132,8 +134,9 @@ parsed_t parse_args(char *argv[])
     init_parsed(&parsed);
     while (argv[i]) {
         i = process_arg(argv, i, &parsed);
-        if (i == -1)
+        if (i == -1) {
             return error_parsed(&parsed);
+        }
     }
     if (parsed.port_nb == 0 || parsed.map[0] == NULL)
         return error_parsed(&parsed);

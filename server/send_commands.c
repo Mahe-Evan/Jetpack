@@ -5,12 +5,12 @@
 ** send commands
 */
 
-#include "server.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "server.h"
 
 static void send_coins(coin_t *collected_coins, int client_fd,
     server_t *restrict server)
