@@ -5,13 +5,13 @@
 ** handle existing clients
 */
 
-#include "jetpack.h"
-#include "server.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include "jetpack.h"
+#include "server.h"
 
 static void process_command_buffer(server_t *restrict server,
     player_t *restrict player, int player_index, char *buffer)
@@ -83,7 +83,7 @@ static bool check_end_game(server_t *restrict server)
             server->winner = i;
         }
     }
-    if (alive_count == 1 | alive_count == 0) {
+    if (alive_count == 1 || alive_count == 0) {
         return true;
     }
     server->winner = 0;

@@ -8,7 +8,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-
 #include "server.h"
 
 static void check_electricity_collision(server_t *restrict server,
@@ -17,14 +16,14 @@ static void check_electricity_collision(server_t *restrict server,
     int player_y = (int)server->player[player_index].pos.y;
     int player_x = (int)server->player[player_index].pos.x;
 
-    if (player_y < 10 && player_x < strlen(server->game.map[player_y]) &&
+    if (player_y < 10 && player_x < (int)strlen(server->game.map[player_y]) &&
         server->game.map[player_y][player_x] == 'e') {
         server->is_alive[player_index] = false;
         server->player[player_index].pos.x = -1;
         server->player[player_index].pos.y = -1;
         return;
     }
-    if (player_y == 10 && player_x < strlen(server->game.map[9]) &&
+    if (player_y == 10 && player_x < (int)strlen(server->game.map[9]) &&
         server->game.map[9][player_x] == 'e') {
         server->is_alive[player_index] = false;
         server->player[player_index].pos.x = -1;
