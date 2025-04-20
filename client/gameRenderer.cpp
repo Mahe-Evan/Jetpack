@@ -50,10 +50,10 @@ void GameRenderer::DrawMap(const GameState& game_state) {
   coin_sprite.setTextureRect(sf::IntRect(0, 0, 200, 200));
   electric_sprite.setTextureRect(sf::IntRect(0, 0, 100, 100));
 
-  coin_sprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
-  electric_sprite.setScale(1.0f / 3.0f, 1.0f / 3.0f);
+  coin_sprite.setScale(0.2f, 0.2f);
+  electric_sprite.setScale(0.3f, 0.3f);
 
-  const float kTileSize = 55.0f;
+  const float kTileSize = 40.0f;
   const float window_width = window_.getSize().x;
   const float window_height = window_.getSize().y;
 
@@ -61,7 +61,8 @@ void GameRenderer::DrawMap(const GameState& game_state) {
   size_t end_x = start_x + static_cast<size_t>(window_width / kTileSize) + 2;
 
   for (size_t y = 0; y < game_state.map_.size(); y++) {
-    float y_pos = y * kTileSize + 5;
+    float y_pos = y * kTileSize + 80.f;
+
     if (y_pos < -kTileSize || y_pos > window_height) {
       continue;
     }
@@ -71,10 +72,14 @@ void GameRenderer::DrawMap(const GameState& game_state) {
       float x_pos = x * kTileSize - game_state.map_offset_;
 
       if (row[x] == 'c') {
-        coin_sprite.setPosition(x_pos, y_pos);
+        coin_sprite.setPosition(
+            x_pos + (kTileSize - coin_sprite.getGlobalBounds().width) / 2,
+            y_pos + (kTileSize - coin_sprite.getGlobalBounds().height) / 2);
         window_.draw(coin_sprite);
       } else if (row[x] == 'e') {
-        electric_sprite.setPosition(x_pos, y_pos);
+        electric_sprite.setPosition(
+            x_pos + (kTileSize - electric_sprite.getGlobalBounds().width) / 2,
+            y_pos + (kTileSize - electric_sprite.getGlobalBounds().height) / 2);
         window_.draw(electric_sprite);
       }
     }
@@ -88,7 +93,9 @@ void GameRenderer::DrawPlayers(const GameState& game_state) {
 
   for (const auto& player : game_state.players_) {
     float x_pos = player.x_ * kTileSize - game_state.map_offset_;
-    float y_pos = player.y_ * kTileSize;
+
+    float scaled_y = player.y_ * 0.9f;
+    float y_pos = scaled_y * kTileSize + 80.f;
 
     if (x_pos < -kTileSize || x_pos > window_width || y_pos < -kTileSize ||
         y_pos > window_height) {
@@ -100,14 +107,18 @@ void GameRenderer::DrawPlayers(const GameState& game_state) {
                                    : asset_manager_.GetPlayerNormalSprite();
 
     player_sprite.setTextureRect(sf::IntRect(0, 0, 130, 140));
-    player_sprite.setPosition(x_pos, y_pos);
+    player_sprite.setScale(0.3f, 0.3f);
+
+    player_sprite.setPosition(
+        x_pos + (kTileSize - player_sprite.getGlobalBounds().width) / 2,
+        y_pos + (kTileSize - player_sprite.getGlobalBounds().height) / 2);
 
     sf::Text id_text;
     id_text.setFont(asset_manager_.GetFont());
     id_text.setString("P" + std::to_string(player.id_));
     id_text.setCharacterSize(14);
     id_text.setFillColor(sf::Color::White);
-    id_text.setPosition(x_pos, y_pos * (window_height / 10));
+    id_text.setPosition(x_pos, y_pos - 20);
 
     window_.draw(player_sprite);
     window_.draw(id_text);
@@ -126,8 +137,9 @@ void GameRenderer::DrawUI(const GameState& game_state) {
     if (game_state.game_result_ == 0) {
       status_text.setString("Game Over: Draw!");
     } else {
-      status_text.setString("Game Over: Player " +
-                            std::to_string(game_state.game_result_) + " wins!");
+      int winner_id = game_state.game_result_ + 1;
+      status_text.setString("Game Over: Player " + std::to_string(winner_id) +
+                            " wins!");
     }
   } else {
     status_text.setString("Game in progress");
@@ -146,6 +158,20 @@ void GameRenderer::DrawUI(const GameState& game_state) {
     score_text.setFillColor(sf::Color::White);
     score_text.setPosition(10, y_pos);
     window_.draw(score_text);
+
+    // Show player coordinates and the scaled value used for rendering
+    sf::Text pos_text;
+    pos_text.setFont(asset_manager_.GetFont());
+    char pos_str[50];
+    float scaled_y = player.y_ * 0.9f;
+    snprintf(pos_str, sizeof(pos_str), "Pos: (%.1f, %.1f) → Scaled Y: %.1f",
+             player.x_, player.y_, scaled_y);
+    pos_text.setString(pos_str);
+    pos_text.setCharacterSize(14);
+    pos_text.setFillColor(sf::Color::Yellow);
+    pos_text.setPosition(200, y_pos + 2);
+    window_.draw(pos_text);
+
     y_pos += 30.0f;
   }
 

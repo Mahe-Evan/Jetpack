@@ -117,7 +117,7 @@ void UpdateWindowTitle(sf::RenderWindow& window,
   int result = network_manager.GetGameResult();
   if (result == 0) {
     window.setTitle("Jetpack Client - Game Over: Draw");
-  } else if (result == network_manager.GetClientId()) {
+  } else if (result == network_manager.GetClientId() - 1) {
     window.setTitle("Jetpack Client - Game Over: You Win!");
   } else {
     window.setTitle("Jetpack Client - Game Over: You Lose!");
@@ -133,7 +133,18 @@ void RunGameLoop(NetworkManager& network_manager, GameState& game_state,
   sf::Clock ready_clock;
   bool ready_sent = false;
 
+  const float FIXED_TIMESTEP = 1.0f / 60.0f;
+  float accumulated_time = 0.0f;
+
+  sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
+  window.setPosition(
+      sf::Vector2i((desktopMode.width - window.getSize().x) / 2,
+                   (desktopMode.height - window.getSize().y) / 2));
+
   while (window.isOpen()) {
+    float frame_time = clock.restart().asSeconds();
+    accumulated_time += frame_time;
+
     if (!ready_sent && !network_manager.HasGameStarted() &&
         ready_clock.getElapsedTime().asSeconds() > 3.0f) {
       network_manager.SendReady();
@@ -150,7 +161,10 @@ void RunGameLoop(NetworkManager& network_manager, GameState& game_state,
       command_handler.HandleEvent(event);
     }
 
-    command_handler.UpdateInput(clock.restart().asSeconds());
+    while (accumulated_time >= FIXED_TIMESTEP) {
+      command_handler.UpdateInput(FIXED_TIMESTEP);
+      accumulated_time -= FIXED_TIMESTEP;
+    }
 
     if (network_manager.IsConnected()) {
       game_state.UpdateFromNetwork(
@@ -166,11 +180,8 @@ void RunGameLoop(NetworkManager& network_manager, GameState& game_state,
     }
 
     game_renderer.Render(game_state);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 }
-
 int main(int argc, char* argv[]) {
   std::string host;
   int port;
